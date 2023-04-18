@@ -57,7 +57,9 @@ public class ClientHandler extends Thread {
      * @throws IOException when an I/O error occurs when sending the file
      */
     private void sendFile ( byte[] content ) throws IOException {
-        Message response = new Message ( content );
+        //Sending the file to the client, before sending check if the file is too big
+        byte[] digest = Integrity.generateDigest ( content.getBytes());
+        Message response = new Message ( content, digest);
         out.writeObject ( response );
         out.flush ( );
     }
