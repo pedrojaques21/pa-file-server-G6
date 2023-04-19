@@ -1,6 +1,4 @@
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.math.BigInteger;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -16,6 +14,8 @@ public class Server implements Runnable {
 
 
     public static final String FILE_PATH = "server/files";
+
+    private static final String MAC_KEY = "Mas2142SS!±";
     private final ServerSocket server;
     private final boolean isConnected;
     private ObjectInputStream in;
@@ -37,6 +37,10 @@ public class Server implements Runnable {
         KeyPair keyPair = Encryption.generateKeyPair ( );
         this.privateRSAKey = keyPair.getPrivate ( );
         this.publicRSAKey = keyPair.getPublic ( );
+        File publicKeyFile = new File("pki/public_keys", "serverPUK.key");
+        try (OutputStream outputStream = new FileOutputStream(publicKeyFile)) {
+            outputStream.write(publicRSAKey.getEncoded());
+        }
     }
 
     @Override
@@ -88,13 +92,14 @@ public class Server implements Runnable {
         // Extracts and decrypt the message
         byte[] decryptedMessage = Encryption.decryptMessage ( messageObj.getMessage ( ) , sharedSecret.toByteArray ( ) );
         // Computes the digest of the received message
-        byte[] computedDigest = Integrity.generateDigest ( decryptedMessage );
+        byte[] computedDigest = Integrity.generateDigest ( decryptedMessage ,MAC_KEY);
         // Verifies the integrity of the message
         if ( ! Integrity.verifyDigest ( messageObj.getSignature ( ) , computedDigest ) ) {
             throw new RuntimeException("The integrity of the message is not verified");
         }
-        System.out.println ( new String ( decryptedMessage ) );
-        ClientHandler clientHandler = new ClientHandler ( client );
+        System.out.println (new String ( decryptedMessage ) );
+        ClientHandler clientHandler = new ClientHandler ( client ,decryptedMessage,privateRSAKey);
+        System.out.println("HELLO");
         clientHandler.start ( );
     }
 

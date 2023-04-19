@@ -1,7 +1,10 @@
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.math.BigInteger;
 import java.net.Socket;
+import java.security.PrivateKey;
+import java.util.Arrays;
 
 /**
  * This class represents the client handler. It handles the communication with the client. It reads the file from the
@@ -9,10 +12,15 @@ import java.net.Socket;
  */
 public class ClientHandler extends Thread {
 
-    private final ObjectInputStream in;
-    private final ObjectOutputStream out;
+    private ObjectInputStream in;
+    private static final String MAC_KEY = "Mas2142SS!±";
+    private ObjectOutputStream out;
     private final Socket client;
     private final boolean isConnected;
+
+    private final PrivateKey privateRSAKey;
+
+    private byte[] messageToSend;
 
     /**
      * Creates a ClientHandler object by specifying the socket to communicate with the client. All the processing is
@@ -22,11 +30,12 @@ public class ClientHandler extends Thread {
      *
      * @throws IOException when an I/O error occurs when creating the socket
      */
-    public ClientHandler ( Socket client ) throws IOException {
+    public ClientHandler (Socket client, byte[] message,  PrivateKey privateRSAKey ) throws IOException {
+        this.privateRSAKey = privateRSAKey;
+        messageToSend = message;
         this.client = client;
-        in = new ObjectInputStream ( client.getInputStream ( ) );
-        out = new ObjectOutputStream ( client.getOutputStream ( ) );
         isConnected = true; // TODO: Check if this is necessary or if it should be controlled
+        out = new ObjectOutputStream ( client.getOutputStream ( ) );
     }
 
     @Override
@@ -35,15 +44,14 @@ public class ClientHandler extends Thread {
         try {
             while ( isConnected ) {
                 // Reads the message to extract the path of the file
-                Message message = ( Message ) in.readObject ( );
-                String request = new String ( message.getMessage ( ) );
+                String request = new String ( messageToSend );
                 // Reads the file and sends it to the client
                 byte[] content = FileHandler.readFile ( RequestUtils.getAbsoluteFilePath ( request ) );
                 sendFile ( content );
             }
             // Close connection
             closeConnection ( );
-        } catch ( IOException | ClassNotFoundException e ) {
+        } catch ( Exception e ) {
             // Close connection
             closeConnection ( );
         }
@@ -56,10 +64,12 @@ public class ClientHandler extends Thread {
      *
      * @throws IOException when an I/O error occurs when sending the file
      */
-    private void sendFile ( byte[] content ) throws IOException {
+    private void sendFile ( byte[] content ) throws Exception {
         //Sending the file to the client, before sending check if the file is too big
-        byte[] digest = Integrity.generateDigest ( content.getBytes());
-        Message response = new Message ( content, digest);
+        byte[] encryptedMessage = Encryption.encryptMessage ( content , privateRSAKey.getEncoded() );
+        byte[] digest = Integrity.generateDigest ( content,MAC_KEY);
+        Message response = new Message ( encryptedMessage, digest);
+        System.out.println("RESPONSE: " + response);
         out.writeObject ( response );
         out.flush ( );
     }
@@ -72,7 +82,6 @@ public class ClientHandler extends Thread {
         try {
             client.close ( );
             out.close ( );
-            in.close ( );
         } catch ( IOException e ) {
             throw new RuntimeException ( e );
         }

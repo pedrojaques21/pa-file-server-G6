@@ -1,9 +1,8 @@
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.math.BigInteger;
 import java.net.Socket;
 import java.nio.file.Files;
+import java.util.Arrays;
 import java.util.Scanner;
 import java.security.KeyPair;
 import java.security.PrivateKey;
@@ -17,6 +16,8 @@ public class Client {
 
     private String name;
     private static final String HOST = "0.0.0.0";
+
+    private static final String MAC_KEY = "Mas2142SS!±";
     private final Socket client;
     private final ObjectInputStream in;
     private final ObjectOutputStream out;
@@ -40,9 +41,34 @@ public class Client {
         out = new ObjectOutputStream ( client.getOutputStream ( ) );
         in = new ObjectInputStream ( client.getInputStream ( ) );
         isConnected = true; // TODO: Check if this is necessary or if it should be controlled
+
+        //generate keys
         KeyPair keyPair = Encryption.generateKeyPair ( );
+
+        //set private key
         this.privateRSAKey = keyPair.getPrivate ( );
+
+        //set public key
         this.publicRSAKey = keyPair.getPublic ( );
+
+        // Create a "private" directory for the client
+        File privateDirectory = new File(this.name + "/private");
+        if (!privateDirectory.exists()) {
+            privateDirectory.mkdirs();
+        }
+
+        // Save the private key to a file in the "private" directory
+        File privateKeyFile = new File(privateDirectory, "private.key");
+        try (OutputStream outputStream = new FileOutputStream(privateKeyFile)) {
+            outputStream.write(privateRSAKey.getEncoded());
+        }
+
+        // Save the public key to a file in the "public_keys" directory
+        File publicKeyFile = new File("pki/public_keys",  this.name + "PUK.key");
+        try (OutputStream outputStream = new FileOutputStream(publicKeyFile)) {
+            outputStream.write(publicRSAKey.getEncoded());
+        }
+
         // Performs the RSA key distribution
         receiverPublicRSAKey = rsaKeyDistribution ( );
         // Create a temporary directory for putting the request files
@@ -73,17 +99,6 @@ public class Client {
     }
 
     /**
-     * Sends the public key to the receiver.
-     *
-     * @param publicKey the public key to send
-     *
-     * @throws Exception when the public key cannot be sent
-     */
-    private void sendPublicDHKey ( byte[] publicKey ) throws Exception {
-        out.writeObject ( publicKey );
-    }
-
-    /**
      * Executes the key distribution protocol. The sender sends its public key to the receiver and receives the public
      * key of the receiver.
      *
@@ -96,6 +111,17 @@ public class Client {
         sendPublicRSAKey ( );
         // Receive the public key of the sender
         return ( PublicKey ) in.readObject ( );
+    }
+
+    /**
+     * Sends the public key to the receiver.
+     *
+     * @param publicKey the public key to send
+     *
+     * @throws Exception when the public key cannot be sent
+     */
+    private void sendPublicDHKey ( byte[] publicKey ) throws Exception {
+        out.writeObject ( publicKey );
     }
 
     /**
@@ -138,15 +164,24 @@ public class Client {
      *
      * @param fileName the name of the file to write
      */
-    private void processResponse ( String fileName ) {
+    private void processResponse ( String fileName ) throws Exception{
         try {
-            Message response = ( Message ) in.readObject ( );
             System.out.println ( "File received" );
+            //reads message received
+            Message response = ( Message ) in.readObject ( );
+            // Extracts and decrypt the message
+            byte[] decryptedMessage = Encryption.decryptMessage ( response.getMessage ( ) , privateRSAKey.getEncoded());
             FileHandler.writeFile ( userDir + "/" + fileName , response.getMessage ( ) );
+            // Verifies the integrity of the message
+            byte[] computedMac = Integrity.generateDigest ( decryptedMessage , MAC_KEY );
+            if ( ! Integrity.verifyDigest ( response.getSignature ( ) , computedMac ) ) {
+                throw new RuntimeException ( "The message has been tampered with!" );
+            }
         } catch ( IOException | ClassNotFoundException e ) {
             e.printStackTrace ( );
         }
     }
+
 
     /**
      * Sends the path of the file to the server using the OutputStream of the socket. The message is sent as an object
@@ -162,7 +197,7 @@ public class Client {
         // Encrypts the message
         byte[] encryptedMessage = Encryption.encryptMessage ( filePath.getBytes ( ) , sharedSecret.toByteArray ( ) );
         // Generates the MAC
-        byte[] digest = Integrity.generateDigest ( filePath.getBytes ( ) );
+        byte[] digest = Integrity.generateDigest ( filePath.getBytes ( ) ,MAC_KEY);
         // Creates the message object
         Message messageObj = new Message ( encryptedMessage , digest );
         // Sends the message
