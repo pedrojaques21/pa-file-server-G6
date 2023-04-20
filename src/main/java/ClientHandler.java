@@ -18,9 +18,11 @@ public class ClientHandler extends Thread {
     private final Socket client;
     private final boolean isConnected;
 
-    private final PrivateKey privateRSAKey;
+    private final BigInteger sharedSecret;
 
     private byte[] messageToSend;
+
+    private Message EncMessage;
 
     /**
      * Creates a ClientHandler object by specifying the socket to communicate with the client. All the processing is
@@ -30,12 +32,18 @@ public class ClientHandler extends Thread {
      *
      * @throws IOException when an I/O error occurs when creating the socket
      */
-    public ClientHandler (Socket client, byte[] message,  PrivateKey privateRSAKey ) throws IOException {
-        this.privateRSAKey = privateRSAKey;
+    public ClientHandler (Socket client, byte[] message,  BigInteger sharedSecret ) throws IOException {
+        Message message1 = null;
+        this.sharedSecret = sharedSecret;
         messageToSend = message;
+        this.EncMessage = message1;
         this.client = client;
         isConnected = true; // TODO: Check if this is necessary or if it should be controlled
         out = new ObjectOutputStream ( client.getOutputStream ( ) );
+    }
+
+    public Message getEncMessage() {
+        return EncMessage;
     }
 
     @Override
@@ -66,12 +74,12 @@ public class ClientHandler extends Thread {
      */
     private void sendFile ( byte[] content ) throws Exception {
         //Sending the file to the client, before sending check if the file is too big
-        byte[] encryptedMessage = Encryption.encryptMessage ( content , privateRSAKey.getEncoded() );
+        byte[] encryptedMessage = Encryption.encryptMessage ( content , sharedSecret.toByteArray() );
         byte[] digest = Integrity.generateDigest ( content,MAC_KEY);
         Message response = new Message ( encryptedMessage, digest);
-        System.out.println("RESPONSE: " + response);
-        out.writeObject ( response );
-        out.flush ( );
+        this.EncMessage = response;
+        //out.writeObject ( response );
+        //out.flush ( );
     }
 
 

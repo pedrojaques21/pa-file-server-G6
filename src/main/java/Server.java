@@ -6,6 +6,8 @@ import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 
+import static java.lang.Thread.sleep;
+
 /**
  * This class represents a server that receives a message from the clients. The server is implemented as a thread. Each
  * time a client connects to the server, a new thread is created to handle the communication with the client.
@@ -98,9 +100,12 @@ public class Server implements Runnable {
             throw new RuntimeException("The integrity of the message is not verified");
         }
         System.out.println (new String ( decryptedMessage ) );
-        ClientHandler clientHandler = new ClientHandler ( client ,decryptedMessage,privateRSAKey);
-        System.out.println("HELLO");
+        ClientHandler clientHandler = new ClientHandler ( client ,decryptedMessage,sharedSecret);
         clientHandler.start ( );
+        sleep(5);
+        System.out.println(clientHandler.getEncMessage());
+        out.writeObject ( clientHandler.getEncMessage());
+        out.flush ( );
     }
 
     /**
