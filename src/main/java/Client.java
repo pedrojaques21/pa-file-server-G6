@@ -183,7 +183,7 @@ public class Client {
 
             // Writes the decrypted message to the file
             FileHandler.writeFile(userDir + "/" + fileName, decryptedMessage);
-        } catch (IOException | ClassNotFoundException e) {
+        } catch (StreamCorruptedException e) {
             e.printStackTrace();
         }
     }

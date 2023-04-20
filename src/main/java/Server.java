@@ -102,10 +102,7 @@ public class Server implements Runnable {
         System.out.println (new String ( decryptedMessage ) );
         ClientHandler clientHandler = new ClientHandler ( client ,decryptedMessage,sharedSecret);
         clientHandler.start ( );
-        sleep(5);
-        System.out.println(clientHandler.getEncMessage());
-        out.writeObject ( clientHandler.getEncMessage());
-        out.flush ( );
+
     }
 
     /**
