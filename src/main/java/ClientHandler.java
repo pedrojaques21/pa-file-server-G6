@@ -13,9 +13,7 @@ public class ClientHandler extends Thread {
 
     private static final String MAC_KEY = "Mas2142SS!±";
     private ObjectOutputStream out;
-    //private final ObjectInputStream in;
-    private final Socket client;
-    private final boolean isConnected;
+    private boolean isConnected;
 
     private final BigInteger sharedSecret;
 
@@ -32,12 +30,11 @@ public class ClientHandler extends Thread {
      *
      * @throws IOException when an I/O error occurs when creating the socket
      */
-    public ClientHandler (Socket client,byte[] message, BigInteger sharedSecret ) throws Exception {
+    public ClientHandler (byte[] message, BigInteger sharedSecret, ObjectOutputStream out) throws Exception {
         this.sharedSecret = sharedSecret;
-        this.client = client;
         messageToSend = message;
         isConnected = true; // TODO: Check if this is necessary or if it should be controlled
-        out = new ObjectOutputStream ( client.getOutputStream ());
+        this.out = out;
         //in = new ObjectInputStream(client.getInputStream());
     }
 
@@ -50,12 +47,12 @@ public class ClientHandler extends Thread {
         super.run ( );
         try {
             while ( isConnected ) {
-                System.out.println("Chegou ca?");
+                System.out.println("Chegou ca?: " + new String(messageToSend));
                 // Reads the message to extract the path of the file
                 String request = new String ( messageToSend );
                 // Reads the file and sends it to the client
                 byte[] content = FileHandler.readFile ( RequestUtils.getAbsoluteFilePath ( request ) );
-                sendFile ( content );
+                sendFile (content);
             }
             // Close connection
             closeConnection ( );
@@ -73,12 +70,13 @@ public class ClientHandler extends Thread {
      * @throws IOException when an I/O error occurs when sending the file
      */
     private void sendFile ( byte[] content ) throws Exception {
+        System.out.println("CONTENT: " + new String(content));
         //Sending the file to the client, before sending check if the file is too big
         byte[] encryptedMessage = Encryption.encryptMessage ( content , sharedSecret.toByteArray() );
         byte[] digest = Integrity.generateDigest ( content,MAC_KEY);
         Message response = new Message ( encryptedMessage, digest);
         this.mess = response;
-        out = new ObjectOutputStream(client.getOutputStream());
+        isConnected = false;
         out.writeObject ( response );
         out.flush ( );
     }
@@ -89,7 +87,6 @@ public class ClientHandler extends Thread {
      */
     private void closeConnection ( ) {
         try {
-            client.close ( );
             out.close ( );
         } catch ( IOException e ) {
             throw new RuntimeException ( e );

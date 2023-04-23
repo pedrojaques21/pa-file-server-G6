@@ -88,7 +88,6 @@ public class Server implements Runnable {
         System.out.println("Processing Request...");
         // Agree on a shared secret
         BigInteger sharedSecret = agreeOnSharedSecret(clientPublicRSAKey);
-
         Message messageObj = (Message) in.readObject();
         // Extracts and decrypt the message
         byte[] decryptedMessage = Encryption.decryptMessage(messageObj.getMessage(), sharedSecret.toByteArray());
@@ -101,26 +100,9 @@ public class Server implements Runnable {
         //prints the request received
         System.out.println (new String ( decryptedMessage ) );
 
-        byte[] content = FileHandler.readFile ( RequestUtils.getAbsoluteFilePath (new String ( decryptedMessage ) ) );
-        //Sending the file to the client, before sending check if the file is too big
-
-
-
-
-        String mee = "hello this is";
-        byte[] digest = Integrity.generateDigest ( mee.getBytes(),MAC_KEY);
-        byte[] encryptedMessage = Encryption.encryptMessage ( mee.getBytes() , sharedSecret.toByteArray() );
-        System.out.println("SECRET: " + Arrays.toString(sharedSecret.toByteArray()));
-
-        Message response = new Message ( mee.getBytes(), digest);
-        System.out.println("Encrypt MESSAGE: " + Arrays.toString(response.getMessage()));
-        out.writeObject ( response );
-        out.flush ( );
-
-        /*creates a thread to answer the client
-        ClientHandler clientHandler = new ClientHandler ( client ,sharedSecret);
+        //creates a thread to answer the client
+        ClientHandler clientHandler = new ClientHandler (decryptedMessage,sharedSecret,out);
         clientHandler.start ( );
-*/
     }
 
     /**

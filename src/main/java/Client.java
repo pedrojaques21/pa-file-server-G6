@@ -1,6 +1,7 @@
 import java.io.*;
 import java.math.BigInteger;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Scanner;
@@ -166,23 +167,18 @@ public class Client {
      */
     private void processResponse(String fileName, ObjectInputStream in) throws Exception {
         try {
-            System.out.println("File received");
+            System.out.println("File received...");
             // Reads the encrypted message from the server
             Message response = (Message) in.readObject();
-            System.out.println("SECRET: " + Arrays.toString(sharedSecret.toByteArray()));
-            System.out.println("MESSAGE RECEIVED: " + Arrays.toString(response.getMessage()));
-            System.out.println("SIGNATURE RECEIVED: " + Arrays.toString(response.getSignature()));
             // Decrypts the message using the shared secret key
             byte[] decryptedMessage = Encryption.decryptMessage(response.getMessage(), sharedSecret.toByteArray());
-            System.out.println("DECRYPED: " + decryptedMessage);
             // Verifies the integrity of the decrypted message using the signature
             byte[] computedMac = Integrity.generateDigest(decryptedMessage, MAC_KEY);
             if (!Integrity.verifyDigest(response.getSignature(), computedMac)) {
                 throw new RuntimeException("The message has been tampered with!");
             }
-
             // Writes the decrypted message to the file
-            FileHandler.writeFile(userDir + "/" + fileName, decryptedMessage);
+            FileHandler.writeFile(userDir + "/" + fileName, new String(decryptedMessage).getBytes());
         } catch (StreamCorruptedException e) {
             e.printStackTrace();
         }
