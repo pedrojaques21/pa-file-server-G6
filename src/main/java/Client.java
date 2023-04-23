@@ -25,7 +25,7 @@ public class Client {
     private final String userDir;
     private final PublicKey publicRSAKey;
     private final PrivateKey privateRSAKey;
-    private final PublicKey receiverPublicRSAKey;
+    private final PublicKey serverPublicRSAKey;
 
     private final BigInteger sharedSecret;
 
@@ -46,10 +46,10 @@ public class Client {
         //generate keys
         KeyPair keyPair = Encryption.generateKeyPair();
 
-        //set private key
+        //set client private key
         this.privateRSAKey = keyPair.getPrivate();
 
-        //set public key
+        //set client public key
         this.publicRSAKey = keyPair.getPublic();
 
         // Create a "private" directory for the client
@@ -71,9 +71,9 @@ public class Client {
         }
 
         // Performs the RSA key distribution
-        receiverPublicRSAKey = rsaKeyDistribution();
+        serverPublicRSAKey = rsaKeyDistribution();
 
-        this.sharedSecret = agreeOnSharedSecret(receiverPublicRSAKey);
+        this.sharedSecret = agreeOnSharedSecret(serverPublicRSAKey);
         // Create a temporary directory for putting the request files
         userDir = Files.createTempDirectory("fileServer").toFile().getAbsolutePath();
         System.out.println("Temporary directory path " + userDir);
@@ -83,11 +83,11 @@ public class Client {
     /**
      * Performs the Diffie-Hellman algorithm to agree on a shared private key.
      *
-     * @param receiverPublicRSAKey the public key of the receiver
+     * @param serverPublicRSAKey the public key of the receiver
      * @return the shared private key
      * @throws Exception when the Diffie-Hellman algorithm fails
      */
-    private BigInteger agreeOnSharedSecret(PublicKey receiverPublicRSAKey) throws Exception {
+    private BigInteger agreeOnSharedSecret(PublicKey serverPublicRSAKey) throws Exception {
         // Generates a private key
         BigInteger privateDHKey = DiffieHellman.generatePrivateKey();
         //Generates a public key based on the private key
@@ -95,7 +95,7 @@ public class Client {
         // Sends the public key to the server encrypted
         sendPublicDHKey(Encryption.encryptRSA(publicDHKey.toByteArray(), privateRSAKey));
         // Waits for the server to send his public key
-        BigInteger serverPublicKey = new BigInteger(Encryption.decryptRSA((byte[]) in.readObject(), receiverPublicRSAKey));
+        BigInteger serverPublicKey = new BigInteger(Encryption.decryptRSA((byte[]) in.readObject(), serverPublicRSAKey));
         // Generates the shared secret
         return DiffieHellman.computePrivateKey(serverPublicKey, privateDHKey);
     }
@@ -169,15 +169,15 @@ public class Client {
             System.out.println("File received");
             // Reads the encrypted message from the server
             Message response = (Message) in.readObject();
-            byte[] encryptedMessage = response.getMessage();
-            byte[] signature = response.getSignature();
-
+            System.out.println("SECRET: " + Arrays.toString(sharedSecret.toByteArray()));
+            System.out.println("MESSAGE RECEIVED: " + Arrays.toString(response.getMessage()));
+            System.out.println("SIGNATURE RECEIVED: " + Arrays.toString(response.getSignature()));
             // Decrypts the message using the shared secret key
-            byte[] decryptedMessage = Encryption.decryptMessage(encryptedMessage, sharedSecret.toByteArray());
-
+            byte[] decryptedMessage = Encryption.decryptMessage(response.getMessage(), sharedSecret.toByteArray());
+            System.out.println("DECRYPED: " + decryptedMessage);
             // Verifies the integrity of the decrypted message using the signature
             byte[] computedMac = Integrity.generateDigest(decryptedMessage, MAC_KEY);
-            if (!Integrity.verifyDigest(signature, computedMac)) {
+            if (!Integrity.verifyDigest(response.getSignature(), computedMac)) {
                 throw new RuntimeException("The message has been tampered with!");
             }
 
@@ -206,7 +206,7 @@ public class Client {
         // Creates the message object
         Message messageObj = new Message(encryptedMessage, digest);
         // Sends the message
-        out.writeObject(messageObj);
+        out.writeUnshared(messageObj);
         out.flush();
     }
 

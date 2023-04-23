@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 import java.security.Key;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.util.Arrays;
 
 public class Encryption {
 
@@ -33,6 +34,7 @@ public class Encryption {
      *
      * @throws Exception when the decryption fails
      */
+
     public static byte[] decryptMessage ( byte[] message , byte[] secretKey ) throws Exception {
         byte[] secretKeyPadded = ByteBuffer.allocate ( 16 ).put ( secretKey ).array ( );
         SecretKeySpec secreteKeySpec = new SecretKeySpec ( secretKeyPadded , "AES" );

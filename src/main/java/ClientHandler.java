@@ -1,8 +1,7 @@
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.math.BigInteger;
 import java.net.Socket;
+import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.util.Arrays;
 
@@ -12,15 +11,17 @@ import java.util.Arrays;
  */
 public class ClientHandler extends Thread {
 
-    private ObjectInputStream in;
     private static final String MAC_KEY = "Mas2142SS!±";
     private ObjectOutputStream out;
+    //private final ObjectInputStream in;
     private final Socket client;
     private final boolean isConnected;
 
     private final BigInteger sharedSecret;
 
-    private byte[] messageToSend;
+    private final byte[] messageToSend;
+
+    private Message mess;
 
 
     /**
@@ -31,12 +32,17 @@ public class ClientHandler extends Thread {
      *
      * @throws IOException when an I/O error occurs when creating the socket
      */
-    public ClientHandler (Socket client, byte[] message,  BigInteger sharedSecret ) throws IOException {
+    public ClientHandler (Socket client,byte[] message, BigInteger sharedSecret ) throws Exception {
         this.sharedSecret = sharedSecret;
-        messageToSend = message;
         this.client = client;
+        messageToSend = message;
         isConnected = true; // TODO: Check if this is necessary or if it should be controlled
-        out = new ObjectOutputStream ( client.getOutputStream ( ) );
+        out = new ObjectOutputStream ( client.getOutputStream ());
+        //in = new ObjectInputStream(client.getInputStream());
+    }
+
+    public Message getMess() {
+        return mess;
     }
 
     @Override
@@ -44,6 +50,7 @@ public class ClientHandler extends Thread {
         super.run ( );
         try {
             while ( isConnected ) {
+                System.out.println("Chegou ca?");
                 // Reads the message to extract the path of the file
                 String request = new String ( messageToSend );
                 // Reads the file and sends it to the client
@@ -70,9 +77,10 @@ public class ClientHandler extends Thread {
         byte[] encryptedMessage = Encryption.encryptMessage ( content , sharedSecret.toByteArray() );
         byte[] digest = Integrity.generateDigest ( content,MAC_KEY);
         Message response = new Message ( encryptedMessage, digest);
-        out.writeUnshared ( response );
+        this.mess = response;
+        out = new ObjectOutputStream(client.getOutputStream());
+        out.writeObject ( response );
         out.flush ( );
-        closeConnection();
     }
 
 
