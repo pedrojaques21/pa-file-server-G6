@@ -20,6 +20,10 @@ public class Client {
 
     private static final String MAC_KEY = "Mas2142SS!±";
     private final Socket client;
+
+    private int numOfRequests;
+
+    private final int maxNumOfRequests = 5;
     private final ObjectInputStream in;
     private final ObjectOutputStream out;
     private final boolean isConnected;
@@ -27,7 +31,6 @@ public class Client {
     private final PublicKey publicRSAKey;
     private final PrivateKey privateRSAKey;
     private final PublicKey serverPublicRSAKey;
-
     private final BigInteger sharedSecret;
 
     /**
@@ -38,6 +41,7 @@ public class Client {
      * @throws IOException when an I/O error occurs when creating the socket
      */
     public Client(int port, String name) throws Exception {
+        this.numOfRequests = 0;
         this.name = name;
         client = new Socket(HOST, port);
         out = new ObjectOutputStream(client.getOutputStream());
@@ -54,9 +58,19 @@ public class Client {
         this.publicRSAKey = keyPair.getPublic();
 
         // Create a "private" directory for the client
-        File privateDirectory = new File(this.name + "/private");
+        File userDirectory = new File(this.name);
+        if (!userDirectory.exists()) {
+            userDirectory.mkdirs();
+        }
+
+        File privateDirectory = new File(userDirectory.getAbsolutePath() + "/private");
         if (!privateDirectory.exists()) {
             privateDirectory.mkdirs();
+        }
+
+        File filesDirectory = new File(userDirectory.getAbsolutePath() + "/files");
+        if (!filesDirectory.exists()) {
+            filesDirectory.mkdirs();
         }
 
         // Save the private key to a file in the "private" directory
@@ -152,12 +166,12 @@ public class Client {
                 processResponse(RequestUtils.getFileNameFromRequest(request), in);
             }
             // Close connection
-            closeConnection();
+            //closeConnection();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
         // Close connection
-        closeConnection();
+        //closeConnection();
     }
 
     /**
@@ -177,8 +191,10 @@ public class Client {
             if (!Integrity.verifyDigest(response.getSignature(), computedMac)) {
                 throw new RuntimeException("The message has been tampered with!");
             }
+            //Writes the decrypted message to the console
+            System.out.println("Decrypted Message: " + new String(decryptedMessage));
             // Writes the decrypted message to the file
-            FileHandler.writeFile(userDir + "/" + fileName, new String(decryptedMessage).getBytes());
+            FileHandler.writeFile(this.name + "/files/" + fileName, new String(decryptedMessage).getBytes());
         } catch (StreamCorruptedException e) {
             e.printStackTrace();
         }
@@ -195,6 +211,9 @@ public class Client {
     public void sendMessage(String filePath) throws Exception {
         // Agree on a shared secret
         //BigInteger sharedSecret = agreeOnSharedSecret ( receiverPublicRSAKey );
+        this.numOfRequests++;
+        int num = maxNumOfRequests - this.numOfRequests;
+        System.out.println("Number of requests left before renew handshake: " + num);
         // Encrypts the message
         byte[] encryptedMessage = Encryption.encryptMessage(filePath.getBytes(), sharedSecret.toByteArray());
         // Generates the MAC
