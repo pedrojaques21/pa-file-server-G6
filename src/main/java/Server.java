@@ -26,6 +26,12 @@ public class Server implements Runnable {
     private final PrivateKey privateRSAKey;
     private final PublicKey publicRSAKey;
 
+    private Socket client;
+
+    private PublicKey senderPublicRSAKey;
+
+    private final BigInteger sharedSecret;
+
     /**
      * Constructs a Server object by specifying the port number. The server will be then created on the specified port.
      * The server will be accepting connections from all local addresses.
@@ -40,6 +46,12 @@ public class Server implements Runnable {
         this.privateRSAKey = keyPair.getPrivate();
         this.publicRSAKey = keyPair.getPublic();
         File publicKeyFile = new File("pki/public_keys", "serverPUK.key");
+        this.client = server.accept();
+        in = new ObjectInputStream(client.getInputStream());
+        out = new ObjectOutputStream(client.getOutputStream());
+        // Perform key distribution
+        this.senderPublicRSAKey = rsaKeyDistribution(in);
+        this.sharedSecret = agreeOnSharedSecret(senderPublicRSAKey);
         try (OutputStream outputStream = new FileOutputStream(publicKeyFile)) {
             outputStream.write(publicRSAKey.getEncoded());
         }
@@ -49,11 +61,6 @@ public class Server implements Runnable {
     public void run() {
         try {
             while (isConnected) {
-                Socket client = server.accept();
-                in = new ObjectInputStream(client.getInputStream());
-                out = new ObjectOutputStream(client.getOutputStream());
-                // Perform key distribution
-                PublicKey senderPublicRSAKey = rsaKeyDistribution(in);
                 // Process the request
                 process(client, senderPublicRSAKey);
             }
@@ -85,24 +92,23 @@ public class Server implements Runnable {
      * @throws IOException if an I/O error occurs when reading stream header
      */
     private void process(Socket client, PublicKey clientPublicRSAKey) throws Exception {
-        System.out.println("Processing Request...");
-        // Agree on a shared secret
-        BigInteger sharedSecret = agreeOnSharedSecret(clientPublicRSAKey);
-        Message messageObj = (Message) in.readObject();
-        // Extracts and decrypt the message
-        byte[] decryptedMessage = Encryption.decryptMessage(messageObj.getMessage(), sharedSecret.toByteArray());
-        // Computes the digest of the received message
-        byte[] computedDigest = Integrity.generateDigest(decryptedMessage, MAC_KEY);
-        // Verifies the integrity of the message
-        if (!Integrity.verifyDigest(messageObj.getSignature(), computedDigest)) {
-            throw new RuntimeException("The integrity of the message is not verified");
-        }
-        //prints the request received
-        System.out.println (new String ( decryptedMessage ) );
+            System.out.println("Processing Request...");
+            // Agree on a shared secret
+            Message messageObj = (Message) in.readObject();
+            // Extracts and decrypt the message
+            byte[] decryptedMessage = Encryption.decryptMessage(messageObj.getMessage(), sharedSecret.toByteArray());
+            // Computes the digest of the received message
+            byte[] computedDigest = Integrity.generateDigest(decryptedMessage, MAC_KEY);
+            // Verifies the integrity of the message
+            if (!Integrity.verifyDigest(messageObj.getSignature(), computedDigest)) {
+                throw new RuntimeException("The integrity of the message is not verified");
+            }
+            //prints the request received
+            System.out.println(new String(decryptedMessage));
 
-        //creates a thread to answer the client
-        ClientHandler clientHandler = new ClientHandler (decryptedMessage,sharedSecret,out);
-        clientHandler.start ( );
+            //creates a thread to answer the client
+            ClientHandler clientHandler = new ClientHandler(decryptedMessage, sharedSecret, out);
+            clientHandler.start();
     }
 
     /**

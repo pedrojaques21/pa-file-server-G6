@@ -35,11 +35,6 @@ public class ClientHandler extends Thread {
         messageToSend = message;
         isConnected = true; // TODO: Check if this is necessary or if it should be controlled
         this.out = out;
-        //in = new ObjectInputStream(client.getInputStream());
-    }
-
-    public Message getMess() {
-        return mess;
     }
 
     @Override
@@ -55,7 +50,7 @@ public class ClientHandler extends Thread {
                 sendFile (content);
             }
             // Close connection
-            closeConnection ( );
+            //closeConnection ( );
         } catch ( Exception e ) {
             // Close connection
             closeConnection ( );
@@ -87,7 +82,7 @@ public class ClientHandler extends Thread {
      */
     private void closeConnection ( ) {
         try {
-            out.close ( );
+            this.out.close ( );
         } catch ( IOException e ) {
             throw new RuntimeException ( e );
         }

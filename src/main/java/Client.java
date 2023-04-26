@@ -13,7 +13,7 @@ import java.security.PublicKey;
  * This class represents the client. The client sends the messages to the server by means of a socket. The use of Object
  * streams enables the sender to send any kind of object.
  */
-public class Client {
+public class Client implements Runnable{
 
     private String name;
     private static final String HOST = "0.0.0.0";
@@ -30,8 +30,8 @@ public class Client {
     private final String userDir;
     private final PublicKey publicRSAKey;
     private final PrivateKey privateRSAKey;
-    private final PublicKey serverPublicRSAKey;
-    private final BigInteger sharedSecret;
+    private PublicKey serverPublicRSAKey;
+    private BigInteger sharedSecret;
 
     /**
      * Constructs a Client object by specifying the port to connect to. The socket must be created before the sender can
@@ -153,25 +153,39 @@ public class Client {
      * Executes the client. It reads the file from the console and sends it to the server. It waits for the response and
      * writes the file to the temporary directory.
      */
-    public void execute() {
+    public void run() {
         Scanner usrInput = new Scanner(System.in);
         try {
+            int numOfRequets = 0;
             while (isConnected) {
-                // Reads the message to extract the path of the file
-                System.out.println("Write the path of the file");
-                String request = usrInput.nextLine();
-                // Request the file
-                sendMessage(request);
-                // Waits for the response
-                processResponse(RequestUtils.getFileNameFromRequest(request), in);
+                if(numOfRequets<=maxNumOfRequests) {
+                    // Reads the message to extract the path of the file
+                    System.out.println("TEST: " + Arrays.toString(sharedSecret.toByteArray()));
+                    System.out.println("****************************************");
+                    System.out.println("***    Write the path of the file    ***");
+                    System.out.println("****************************************");
+                    String request = usrInput.nextLine();
+                    // Request the file
+                    sendMessage(request);
+                    // Waits for the response
+                    processResponse(RequestUtils.getFileNameFromRequest(request), in);
+                    numOfRequets++;
+                } else{
+                    System.out.println("****************************************");
+                    System.out.println("***      Renewing the Handshake      ***");
+                    System.out.println("****************************************");
+                    serverPublicRSAKey = rsaKeyDistribution();
+                    sharedSecret = agreeOnSharedSecret(serverPublicRSAKey);
+                    numOfRequests = 0;
+                }
             }
             // Close connection
-            //closeConnection();
+            closeConnection();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
         // Close connection
-        //closeConnection();
+        closeConnection();
     }
 
     /**
