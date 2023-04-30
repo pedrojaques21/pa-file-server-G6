@@ -31,21 +31,18 @@ jobs:
         with:
           name: build-artifact
           path: |
-            client/target/
-            server/target/
+            target/
 
       - name: Upload the documentation artifact
         uses: actions/upload-artifact@v2
         with:
           name: documentation-artifact
           path: |
-            client/target/apidocs/
-            server/target/apidocs/
+            target/apidocs/
 
       - name: Upload the test coverage artifact
         uses: actions/upload-artifact@v2
         with:
           name: test-coverage-artifact
           path: |
-            client/target/site/jacoco/
-            server/target/site/jacoco/
+            target/site/jacoco/
