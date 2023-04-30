@@ -27,21 +27,21 @@ jobs:
         run: mvn package
 
       - name: Upload the build artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3.1.2
         with:
           name: build-artifact
           path: |
             target/
 
       - name: Upload the documentation artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3.1.2
         with:
           name: documentation-artifact
           path: |
             target/apidocs/
 
       - name: Upload the test coverage artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3.1.2
         with:
           name: test-coverage-artifact
           path: |
