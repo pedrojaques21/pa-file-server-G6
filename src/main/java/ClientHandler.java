@@ -42,7 +42,7 @@ public class ClientHandler extends Thread {
         super.run ( );
         try {
             while ( isConnected ) {
-                System.out.println("Chegou ca?: " + new String(messageToSend));
+                System.out.println("Request arrived: " + new String(messageToSend));
                 // Reads the message to extract the path of the file
                 String request = new String ( messageToSend );
                 // Reads the file and sends it to the client
@@ -65,7 +65,7 @@ public class ClientHandler extends Thread {
      * @throws IOException when an I/O error occurs when sending the file
      */
     private void sendFile ( byte[] content ) throws Exception {
-        System.out.println("CONTENT: " + new String(content));
+        System.out.println("CONTENT:\n " + new String(content));
         //Sending the file to the client, before sending check if the file is too big
         byte[] encryptedMessage = Encryption.encryptMessage ( content , sharedSecret.toByteArray() );
         byte[] digest = Integrity.generateDigest ( content,MAC_KEY);

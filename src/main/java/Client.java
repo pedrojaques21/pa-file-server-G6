@@ -1,7 +1,6 @@
 import java.io.*;
 import java.math.BigInteger;
 import java.net.Socket;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Scanner;
@@ -15,15 +14,16 @@ import java.security.PublicKey;
  */
 public class Client implements Runnable{
 
-    private String name;
+    public static String name;
+
     private static final String HOST = "0.0.0.0";
 
     private static final String MAC_KEY = "Mas2142SS!±";
     private final Socket client;
 
     private int numOfRequests;
+    private final int MAX_NUM_OF_REQUESTS = 5;
 
-    private final int maxNumOfRequests = 5;
     private final ObjectInputStream in;
     private final ObjectOutputStream out;
     private final boolean isConnected;
@@ -43,6 +43,9 @@ public class Client implements Runnable{
     public Client(int port, String name) throws Exception {
         this.numOfRequests = 0;
         this.name = name;
+
+        numOfRequests = userRegistration(name);
+
         client = new Socket(HOST, port);
         out = new ObjectOutputStream(client.getOutputStream());
         in = new ObjectInputStream(client.getInputStream());
@@ -94,6 +97,9 @@ public class Client implements Runnable{
         System.out.println("Temporary directory path " + userDir);
     }
 
+    public static String getName() {
+        return name;
+    }
 
     /**
      * Performs the Diffie-Hellman algorithm to agree on a shared private key.
@@ -156,9 +162,9 @@ public class Client implements Runnable{
     public void run() {
         Scanner usrInput = new Scanner(System.in);
         try {
-            int numOfRequets = 0;
+
             while (isConnected) {
-                if(numOfRequets<=maxNumOfRequests) {
+                if(numOfRequests <= MAX_NUM_OF_REQUESTS) {
                     // Reads the message to extract the path of the file
                     System.out.println("TEST: " + Arrays.toString(sharedSecret.toByteArray()));
                     System.out.println("****************************************");
@@ -169,7 +175,7 @@ public class Client implements Runnable{
                     sendMessage(request);
                     // Waits for the response
                     processResponse(RequestUtils.getFileNameFromRequest(request), in);
-                    numOfRequets++;
+                    numOfRequests++;
                 } else{
                     System.out.println("****************************************");
                     System.out.println("***      Renewing the Handshake      ***");
@@ -179,6 +185,7 @@ public class Client implements Runnable{
                     numOfRequests = 0;
                 }
             }
+            System.out.println("Client 4 (no while, before closeConnections) : " + name);
             // Close connection
             closeConnection();
         } catch (Exception e) {
@@ -225,8 +232,8 @@ public class Client implements Runnable{
     public void sendMessage(String filePath) throws Exception {
         // Agree on a shared secret
         //BigInteger sharedSecret = agreeOnSharedSecret ( receiverPublicRSAKey );
-        this.numOfRequests++;
-        int num = maxNumOfRequests - this.numOfRequests;
+        //this.numOfRequests++;
+        int num = MAX_NUM_OF_REQUESTS - this.numOfRequests;
         System.out.println("Number of requests left before renew handshake: " + num);
         // Encrypts the message
         byte[] encryptedMessage = Encryption.encryptMessage(filePath.getBytes(), sharedSecret.toByteArray());
@@ -237,6 +244,32 @@ public class Client implements Runnable{
         // Sends the message
         out.writeUnshared(messageObj);
         out.flush();
+    }
+
+    /**
+     * Reads numOfRequestsMap from the file NREQUESTSMAP_PATH , hashMap witch has the users
+     * and the respective quantities of requests. If it´s a new user, numOfRequests = 0,
+     * otherwise, numOfRequests receives the HasMap corresponding value.
+     * @param user
+     * @return the number of the user requests
+     */
+    public int userRegistration(String user) {
+        System.out.println();
+        MainServer.numOfRequestsMap = FileHandler.readHashMapFromFile(MainServer.NREQUESTSMAP_PATH);
+        //FileHandler.printHashMap(MainServer.numOfRequestsMap);
+        if (!MainServer.numOfRequestsMap.containsKey(name)) {
+            MainServer.numOfRequestsMap.put(name, 0);
+            System.out.println("*** Welcome, " + name + "!");
+            System.out.println("You are now able to enjoy our huge archive of files.");
+        } else {
+            numOfRequests = MainServer.numOfRequestsMap.get(name);
+            System.out.println("*** Welcome again, " + name + "!");
+            System.out.println("Number of Requests: " + numOfRequests);
+        }
+        FileHandler.saveHashMapToTextFile(MainServer.numOfRequestsMap, MainServer.NREQUESTSMAP_PATH); //shouldn't be needed here
+        //FileHandler.printHashMap(MainServer.numOfRequestsMap);
+
+        return numOfRequests;
     }
 
     /**

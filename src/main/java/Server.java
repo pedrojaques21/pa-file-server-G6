@@ -6,6 +6,8 @@ import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Scanner;
 
 import static java.lang.Thread.sleep;
 
@@ -14,6 +16,8 @@ import static java.lang.Thread.sleep;
  * time a client connects to the server, a new thread is created to handle the communication with the client.
  */
 public class Server implements Runnable {
+
+    private static Scanner scanner = new Scanner(System.in);
 
 
     public static final String FILE_PATH = "server/files";
@@ -40,13 +44,17 @@ public class Server implements Runnable {
      * @throws IOException if an I/O error occurs when opening the socket
      */
     public Server(int port) throws Exception {
+
         server = new ServerSocket(port);
         isConnected = true; // TODO: Check if this is necessary or if it should be controlled
         KeyPair keyPair = Encryption.generateKeyPair();
         this.privateRSAKey = keyPair.getPrivate();
         this.publicRSAKey = keyPair.getPublic();
         File publicKeyFile = new File("pki/public_keys", "serverPUK.key");
+
+        System.out.println("Waiting client connections...");
         this.client = server.accept();
+
         in = new ObjectInputStream(client.getInputStream());
         out = new ObjectOutputStream(client.getOutputStream());
         // Perform key distribution
@@ -59,8 +67,15 @@ public class Server implements Runnable {
 
     @Override
     public void run() {
+        
         try {
             while (isConnected) {
+
+                System.out.println("*******************************");
+                System.out.println(" Press 's' to stop the server, ");
+                System.out.println("saving users number of requests");
+                System.out.println("*******************************");
+
                 // Process the request
                 process(client, senderPublicRSAKey);
             }
@@ -92,23 +107,24 @@ public class Server implements Runnable {
      * @throws IOException if an I/O error occurs when reading stream header
      */
     private void process(Socket client, PublicKey clientPublicRSAKey) throws Exception {
-            System.out.println("Processing Request...");
-            // Agree on a shared secret
-            Message messageObj = (Message) in.readObject();
-            // Extracts and decrypt the message
-            byte[] decryptedMessage = Encryption.decryptMessage(messageObj.getMessage(), sharedSecret.toByteArray());
-            // Computes the digest of the received message
-            byte[] computedDigest = Integrity.generateDigest(decryptedMessage, MAC_KEY);
-            // Verifies the integrity of the message
-            if (!Integrity.verifyDigest(messageObj.getSignature(), computedDigest)) {
-                throw new RuntimeException("The integrity of the message is not verified");
-            }
-            //prints the request received
-            System.out.println(new String(decryptedMessage));
 
-            //creates a thread to answer the client
-            ClientHandler clientHandler = new ClientHandler(decryptedMessage, sharedSecret, out);
-            clientHandler.start();
+        System.out.println("Processing Request...");
+        // Agree on a shared secret
+        Message messageObj = (Message) in.readObject();
+        // Extracts and decrypt the message
+        byte[] decryptedMessage = Encryption.decryptMessage(messageObj.getMessage(), sharedSecret.toByteArray());
+        // Computes the digest of the received message
+        byte[] computedDigest = Integrity.generateDigest(decryptedMessage, MAC_KEY);
+        // Verifies the integrity of the message
+        if (!Integrity.verifyDigest(messageObj.getSignature(), computedDigest)) {
+            throw new RuntimeException("The integrity of the message is not verified");
+        }
+        //prints the request received
+        System.out.println(new String(decryptedMessage));
+
+        //creates a thread to answer the client
+        ClientHandler clientHandler = new ClientHandler(decryptedMessage, sharedSecret, out);
+        clientHandler.start();
     }
 
     /**
