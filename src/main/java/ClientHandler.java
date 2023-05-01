@@ -167,13 +167,11 @@ public class ClientHandler extends Thread {
             for (File directory : directories) {
                 if (directory.getName().equals(this.clientName)) {
                     String filePath = directory + File.separator + "client.config";
-                    int num = 0;
                     File file = new File(filePath);
                     if (file.exists() && file.canRead()) {
                         Scanner scanner = new Scanner(file);
                         if(scanner.hasNextLine()) {
-                            num = Integer.parseInt(scanner.nextLine());
-                            this.numOfRequests = num;
+                            this.numOfRequests = Integer.parseInt(scanner.nextLine());
                             scanner.close();
                         }else{
                             this.numOfRequests = 0;

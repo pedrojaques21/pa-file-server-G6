@@ -4,7 +4,6 @@ import java.nio.ByteBuffer;
 import java.security.Key;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
-import java.util.Arrays;
 
 public class Encryption {
 
