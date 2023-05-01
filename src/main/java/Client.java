@@ -45,8 +45,8 @@ public class Client {
         this.numOfRequests = 0;
         this.name = name;
         client = new Socket(HOST, port);
-        out = new ObjectOutputStream(client.getOutputStream());
-        in = new ObjectInputStream(client.getInputStream());
+        this.out = new ObjectOutputStream(client.getOutputStream());
+        this.in = new ObjectInputStream(client.getInputStream());
         isConnected = true; // TODO: Check if this is necessary or if it should be controlled
         // Create a "private" directory for the client
         userDirectory = new File(this.name);
@@ -56,7 +56,7 @@ public class Client {
         } else {
             clientExists = true;
         }
-
+        //algorithmMenu();
         handshake();
         File filesDirectory = new File(userDirectory.getAbsolutePath() + "/files");
         if (!filesDirectory.exists()) {
@@ -66,6 +66,38 @@ public class Client {
         // Create a temporary directory for putting the request files
         userDir = Files.createTempDirectory("fileServer").toFile().getAbsolutePath();
         System.out.println("Temporary directory path " + userDir);
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public Socket getClient() {
+        return client;
+    }
+
+    public int getNumOfRequests() {
+        return numOfRequests;
+    }
+
+    public PublicKey getPublicRSAKey() {
+        return publicRSAKey;
+    }
+
+    public PrivateKey getPrivateRSAKey() {
+        return privateRSAKey;
+    }
+
+    public PublicKey getServerPublicRSAKey() {
+        return serverPublicRSAKey;
+    }
+
+    public BigInteger getSharedSecret() {
+        return sharedSecret;
+    }
+
+    public ObjectInputStream getIn() {
+        return in;
     }
 
     private void handshake() throws Exception {
@@ -157,11 +189,35 @@ public class Client {
     }
 
     private void algorithmMenu() {
-        Scanner usrInput = new Scanner(System.in);
+        Scanner algorithmInput = new Scanner(System.in);
         System.out.println("Which encryption Algorithm would you like to use? ");
         System.out.println("1 - AES");
         System.out.println("2 - DES");
-        System.out.println("3 - RSA");
+        System.out.println("3 - 3DES");
+        System.out.println("4 - RSA");
+        int option = algorithmInput.nextInt();
+        switch (option){
+            case 1 -> {
+                System.out.println("*** AES Algorithm chose ***");
+            }
+            case 2 -> {
+                System.out.println("*** DES Algorithm chose ***");
+            }
+            case 3 -> {
+                System.out.println("*** 3DES Algorithm chose ***");
+            }
+            case 4 -> {
+                System.out.println("*** RSA Algorithm chose ***");
+            }
+            default -> {
+                System.out.println("*** Invalid Algorithm! ***\n*** Shutting Down ***");
+            }
+        }
+        System.out.println("Which Hashing Algorithm would you like to use? ");
+        System.out.println("1 - AES");
+        System.out.println("2 - DES");
+        System.out.println("3 - 3DES");
+        System.out.println("4 - RSA");
     }
 
 
@@ -246,7 +302,7 @@ public class Client {
     /**
      * Renews the Handshake after 5 requests to the server
      */
-    private void renewHandshake() throws Exception {
+    public void renewHandshake() throws Exception {
         //generate keys
         KeyPair keyPair = Encryption.generateKeyPair();
         //set client private key
@@ -266,7 +322,7 @@ public class Client {
      *
      * @param fileName the name of the file to write
      */
-    private void processResponse(String fileName, ObjectInputStream in) throws Exception {
+    public void processResponse(String fileName, ObjectInputStream in) throws Exception {
         try {
             System.out.println("File received...");
             // Reads the encrypted message from the server
@@ -294,7 +350,7 @@ public class Client {
      * @param name - name of the client
      * @throws Exception
      */
-    public void greeting(String name) throws Exception {
+    private void greeting(String name) throws Exception {
         // Encrypts the message
         byte[] encryptedMessage = Encryption.encryptMessage(name.getBytes(), sharedSecret.toByteArray());
         // Generates the MAC
