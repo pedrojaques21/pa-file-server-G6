@@ -1,16 +1,10 @@
 import org.junit.jupiter.api.*;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
 import java.net.Socket;
-import java.security.PublicKey;
-import java.util.Scanner;
-import java.util.concurrent.locks.ReentrantLock;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class tests {
+public class ServerTests {
 
     private Client client;
     private static Server server;
@@ -25,7 +19,7 @@ public class tests {
     }
     @BeforeEach
     public void setUp() throws Exception{
-         client = new Client(8000,"testClient");
+        client = new Client(8000,"testClient");
     }
 
     @AfterEach
