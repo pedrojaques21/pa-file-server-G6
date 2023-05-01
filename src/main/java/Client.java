@@ -17,12 +17,9 @@ public class Client {
     private final String name;
     private static final String HOST = "0.0.0.0";
     private final Socket client;
-
     private int numOfRequests;
     private final int MAX_NUM_OF_REQUESTS = 5;
-
     private File newConfigFile;
-    private final int maxNumOfRequests = 5;
     private final ObjectInputStream in;
     private final ObjectOutputStream out;
     private final boolean isConnected;
@@ -44,10 +41,9 @@ public class Client {
      * @throws IOException when an I/O error occurs when creating the socket
      */
     public Client(int port, String name) throws Exception {
-        this.numOfRequests = 0;
-        this.name = name;
 
-        numOfRequests = userRegistration(name);
+        this.name = name;
+        this.numOfRequests = 0;
 
         client = new Socket(HOST, port);
         out = new ObjectOutputStream(client.getOutputStream());
@@ -176,6 +172,8 @@ public class Client {
      */
     public void execute() throws Exception {
         Scanner usrInput = new Scanner(System.in);
+
+        userRegistration(name); // 0 if new or a value from MainServer.numOfRequestsMap
         try {
             String clientName = "NAME" + " : " + this.name;
             greeting(clientName);
@@ -203,7 +201,7 @@ public class Client {
                 }
             }
             while (isConnected) {
-                if (this.numOfRequests < maxNumOfRequests) {
+                if (this.numOfRequests < MAX_NUM_OF_REQUESTS) {
                     // Reads the message to extract the path of the file
                     System.out.println("TEST: " + Arrays.toString(sharedSecret.toByteArray()));
                     System.out.println("****************************************");
@@ -347,7 +345,7 @@ public class Client {
         if (!MainServer.numOfRequestsMap.containsKey(name)) {
             MainServer.numOfRequestsMap.put(name, 0);
             System.out.println("*** Welcome, " + name + "!");
-            System.out.println("You are now able to enjoy our huge archive of files.");
+            System.out.println("You are now able to enjoy file storage.");
         } else {
             numOfRequests = MainServer.numOfRequestsMap.get(name);
             System.out.println("*** Welcome again, " + name + "!");

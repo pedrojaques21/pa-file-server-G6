@@ -1,24 +1,12 @@
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.security.KeyPair;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Scanner;
-
-import static java.lang.Thread.sleep;
 
 /**
  * This class represents a server that receives a message from the clients. The server is implemented as a thread. Each
  * time a client connects to the server, a new thread is created to handle the communication with the client.
  */
 public class Server implements Runnable {
-
-    private static Scanner scanner = new Scanner(System.in);
-
-
     public static final String FILE_PATH = "server/files";
     private final ServerSocket server;
     private boolean isConnected;

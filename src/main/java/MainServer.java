@@ -20,10 +20,8 @@ public class MainServer {
         Thread serverThread = new Thread ( server );
         serverThread.start ( );
 
-        // move to process() in Server class
         String stop = "";
         do {
-            //in Server class, run() method it's coded a clarifying Message.
             stop = scanner.nextLine();
         } while (!stop.equals("s"));
 
