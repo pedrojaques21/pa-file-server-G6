@@ -1,4 +1,5 @@
 import java.io.*;
+import java.math.BigInteger;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -10,6 +11,8 @@ public class Server implements Runnable {
     public static final String FILE_PATH = "server/files";
     private final ServerSocket server;
     private boolean isConnected;
+
+    private BigInteger clientHandlerSharedSecret;
 
     /**
      * Constructs a Server object by specifying the port number. The server will be then created on the specified port.
@@ -24,6 +27,9 @@ public class Server implements Runnable {
 
     }
 
+    public BigInteger getClientHandlerSharedSecret() {
+        return clientHandlerSharedSecret;
+    }
 
     @Override
     public void run() {
@@ -46,7 +52,9 @@ public class Server implements Runnable {
     private void process(Socket client) throws Exception {
         //creates a thread to answer the client
         ClientHandler clientHandler = new ClientHandler(client);
+        clientHandlerSharedSecret = clientHandler.getSharedSecret();
         clientHandler.start();
+
     }
 
 
