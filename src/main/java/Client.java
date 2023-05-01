@@ -29,6 +29,12 @@ public class Client {
     private PublicKey serverPublicRSAKey;
     private BigInteger sharedSecret;
 
+    public static String symmetricAlgorithm;
+    public static String hashingAlgorithm;
+    public  static Scanner input = new Scanner(System.in);
+
+
+
     private boolean clientExists;
 
     private File userDirectory;
@@ -70,6 +76,11 @@ public class Client {
     }
 
     private void handshake() throws Exception {
+
+        // Selecting symmetric and hashing algorithms
+        symmetricAlgorithm = menuSymmetricAlgorithm();
+        hashingAlgorithm = menuHashingAlgorithm();
+
         //generate keys
         KeyPair keyPair = Encryption.generateKeyPair();
 
@@ -101,7 +112,6 @@ public class Client {
 
         this.sharedSecret = agreeOnSharedSecret(serverPublicRSAKey);
     }
-
 
     /**
      * Performs the Diffie-Hellman algorithm to agree on a shared private key.
@@ -156,15 +166,6 @@ public class Client {
         out.writeObject(publicRSAKey);
         out.flush();
     }
-
-    private void algorithmMenu() {
-        Scanner usrInput = new Scanner(System.in);
-        System.out.println("Which encryption Algorithm would you like to use? ");
-        System.out.println("1 - AES");
-        System.out.println("2 - DES");
-        System.out.println("3 - RSA");
-    }
-
 
     /**
      * Executes the client. It reads the file from the console and sends it to the server. It waits for the response and
@@ -251,6 +252,11 @@ public class Client {
      * Renews the Handshake after 5 requests to the server
      */
     private void renewHandshake() throws Exception {
+
+        // Selecting symmetric and hashing algorithms
+        symmetricAlgorithm = menuSymmetricAlgorithm();
+        hashingAlgorithm = menuHashingAlgorithm();
+
         //generate keys
         KeyPair keyPair = Encryption.generateKeyPair();
         //set client private key
@@ -291,7 +297,6 @@ public class Client {
         }
     }
 
-
     /**
      * Responsible for letting the server know the clients name
      *
@@ -309,7 +314,6 @@ public class Client {
         out.writeUnshared(messageObj);
         out.flush();
     }
-
 
     /**
      * Sends the path of the file to the server using the OutputStream of the socket. The message is sent as an object
@@ -356,6 +360,70 @@ public class Client {
 
         return numOfRequests;
     }
+
+    /**
+     * Selecting alternative options of symetric algorythm
+     * @return
+     */
+    public String menuSymmetricAlgorithm() {
+        int option;
+        do {
+            System.out.println("**********************************");
+            System.out.println("* Encryption Symmetric Algorithm *");
+            System.out.println("* (1)-AES256; (2)-DES; (3)-3DES  *");
+            System.out.println("**********************************");
+            option = input.nextInt();
+
+            switch (option) {
+                case 1:
+                    symmetricAlgorithm = "AES";
+                    System.out.println("Implementing AES256...");
+                    break;
+                case 2:
+                    symmetricAlgorithm = "DES";
+                    System.out.println("Implementing AES256...");
+                    break;
+                case 3:
+                    symmetricAlgorithm = "3DES";
+                    System.out.println("Implementing AES256...");
+                    break;
+            }
+        } while (option < 1 && option > 3);
+
+        return symmetricAlgorithm;
+    }
+
+    /**
+     * Selecting alternative options of hashing algorythm
+     * @return
+     */
+    public String menuHashingAlgorithm() {
+        int option;
+        do {
+            System.out.println("***********************************");
+            System.out.println("*        Hashing Algorithm        *");
+            System.out.println("* (1)-MD5; (2)-SHA256; (3)-SHA512 *");
+            System.out.println("***********************************");
+            option = input.nextInt();
+
+            switch (option) {
+                case 1:
+                    symmetricAlgorithm = "MD5";
+                    System.out.println("Implementing AES256...");
+                    break;
+                case 2:
+                    symmetricAlgorithm = "SHA256";
+                    System.out.println("Implementing AES256...");
+                    break;
+                case 3:
+                    symmetricAlgorithm = "SHA512";
+                    System.out.println("Implementing AES256...");
+                    break;
+            }
+        } while (option < 1 && option > 3);
+        return hashingAlgorithm;
+    }
+
 
     /**
      * Closes the connection by closing the socket and the streams.

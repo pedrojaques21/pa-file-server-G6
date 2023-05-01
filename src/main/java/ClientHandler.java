@@ -26,8 +26,7 @@ public class ClientHandler extends Thread {
 
     private String clientName;
 
-    private final int maxNumOfRequests = 5;
-
+    private final int MAX_NUM_OF_REQUESTS = 5;
     private int numOfRequests;
 
 
@@ -115,7 +114,7 @@ public class ClientHandler extends Thread {
         super.run ( );
         try {
             while (isConnected) {
-                if (this.numOfRequests < maxNumOfRequests) {
+                if (this.numOfRequests < MAX_NUM_OF_REQUESTS) {
                     System.out.println("Processing Request...");
                     byte[] content = receiveMessage();
                     if(content.length == 0) {
