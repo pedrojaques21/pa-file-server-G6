@@ -7,8 +7,7 @@ public class MainClient {
         String name = scanner.nextLine();
 
         Client client = new Client ( 8000,name );
-        Thread clientThread = new Thread(client);
-        clientThread.start();
+        client.execute();
     }
 
 }

@@ -12,26 +12,29 @@ import java.security.PublicKey;
  * This class represents the client. The client sends the messages to the server by means of a socket. The use of Object
  * streams enables the sender to send any kind of object.
  */
-public class Client implements Runnable{
+public class Client {
 
-    public static String name;
-
+    private final String name;
     private static final String HOST = "0.0.0.0";
-
-    private static final String MAC_KEY = "Mas2142SS!±";
     private final Socket client;
 
     private int numOfRequests;
     private final int MAX_NUM_OF_REQUESTS = 5;
 
+    private File newConfigFile;
+    private final int maxNumOfRequests = 5;
     private final ObjectInputStream in;
     private final ObjectOutputStream out;
     private final boolean isConnected;
     private final String userDir;
-    private final PublicKey publicRSAKey;
-    private final PrivateKey privateRSAKey;
+    private PublicKey publicRSAKey;
+    private PrivateKey privateRSAKey;
     private PublicKey serverPublicRSAKey;
     private BigInteger sharedSecret;
+
+    private boolean clientExists;
+
+    private File userDirectory;
 
     /**
      * Constructs a Client object by specifying the port to connect to. The socket must be created before the sender can
@@ -50,7 +53,27 @@ public class Client implements Runnable{
         out = new ObjectOutputStream(client.getOutputStream());
         in = new ObjectInputStream(client.getInputStream());
         isConnected = true; // TODO: Check if this is necessary or if it should be controlled
+        // Create a "private" directory for the client
+        userDirectory = new File(this.name);
+        if (!userDirectory.exists()) {
+            clientExists = false;
+            userDirectory.mkdirs();
+        } else {
+            clientExists = true;
+        }
 
+        handshake();
+        File filesDirectory = new File(userDirectory.getAbsolutePath() + "/files");
+        if (!filesDirectory.exists()) {
+            filesDirectory.mkdirs();
+        }
+
+        // Create a temporary directory for putting the request files
+        userDir = Files.createTempDirectory("fileServer").toFile().getAbsolutePath();
+        System.out.println("Temporary directory path " + userDir);
+    }
+
+    private void handshake() throws Exception {
         //generate keys
         KeyPair keyPair = Encryption.generateKeyPair();
 
@@ -60,20 +83,9 @@ public class Client implements Runnable{
         //set client public key
         this.publicRSAKey = keyPair.getPublic();
 
-        // Create a "private" directory for the client
-        File userDirectory = new File(this.name);
-        if (!userDirectory.exists()) {
-            userDirectory.mkdirs();
-        }
-
         File privateDirectory = new File(userDirectory.getAbsolutePath() + "/private");
         if (!privateDirectory.exists()) {
             privateDirectory.mkdirs();
-        }
-
-        File filesDirectory = new File(userDirectory.getAbsolutePath() + "/files");
-        if (!filesDirectory.exists()) {
-            filesDirectory.mkdirs();
         }
 
         // Save the private key to a file in the "private" directory
@@ -92,14 +104,8 @@ public class Client implements Runnable{
         serverPublicRSAKey = rsaKeyDistribution();
 
         this.sharedSecret = agreeOnSharedSecret(serverPublicRSAKey);
-        // Create a temporary directory for putting the request files
-        userDir = Files.createTempDirectory("fileServer").toFile().getAbsolutePath();
-        System.out.println("Temporary directory path " + userDir);
     }
 
-    public static String getName() {
-        return name;
-    }
 
     /**
      * Performs the Diffie-Hellman algorithm to agree on a shared private key.
@@ -155,37 +161,85 @@ public class Client implements Runnable{
         out.flush();
     }
 
+    private void algorithmMenu() {
+        Scanner usrInput = new Scanner(System.in);
+        System.out.println("Which encryption Algorithm would you like to use? ");
+        System.out.println("1 - AES");
+        System.out.println("2 - DES");
+        System.out.println("3 - RSA");
+    }
+
+
     /**
      * Executes the client. It reads the file from the console and sends it to the server. It waits for the response and
      * writes the file to the temporary directory.
      */
-    public void run() {
+    public void execute() throws Exception {
         Scanner usrInput = new Scanner(System.in);
         try {
-
+            String clientName = "NAME" + " : " + this.name;
+            greeting(clientName);
+            if (clientExists) {
+                System.out.println("Vamos consultar");
+                String filePath = userDirectory.getAbsolutePath() + File.separator + "client.config";
+                newConfigFile = new File(filePath);
+                int num = 0;
+                Scanner scanner = new Scanner(newConfigFile);
+                num = Integer.parseInt(scanner.nextLine());
+                System.out.println("Valor do num: " + num);
+                this.numOfRequests = num;
+                scanner.close();
+            } else {
+                String configFile = "client.config";
+                newConfigFile = new File(userDirectory.getAbsolutePath(), configFile);
+                if (!newConfigFile.exists()) {
+                    newConfigFile.createNewFile();
+                    System.out.println("O arquivo " + newConfigFile + " foi criado com sucesso.");
+                    BufferedWriter writer = new BufferedWriter(new FileWriter(newConfigFile));
+                    writer.write(Integer.toString(this.numOfRequests));
+                    writer.close();
+                } else {
+                    System.out.println("O arquivo " + newConfigFile + " já existe.");
+                }
+            }
             while (isConnected) {
-                if(numOfRequests <= MAX_NUM_OF_REQUESTS) {
+                if (this.numOfRequests < maxNumOfRequests) {
                     // Reads the message to extract the path of the file
                     System.out.println("TEST: " + Arrays.toString(sharedSecret.toByteArray()));
+                    System.out.println("****************************************");
+                    System.out.println("***    Write the path of the file    ***");
+                    System.out.println("****************************************\n");
+                    String request = usrInput.nextLine();
+                    // Request the file
+                    sendMessage(request);
+                    // update value of the file
+                    BufferedWriter writer = new BufferedWriter(new FileWriter(newConfigFile));
+                    writer.write(Integer.toString(this.numOfRequests));
+                    writer.close();
+                    // Waits for the response
+                    processResponse(RequestUtils.getFileNameFromRequest(request), in);
+
+                } else {
+
+                    System.out.println("****************************************");
+                    System.out.println("***      Renewing the Handshake      ***");
+                    System.out.println("****************************************\n");
+                    this.numOfRequests = 0;
+                    renewHandshake();
                     System.out.println("****************************************");
                     System.out.println("***    Write the path of the file    ***");
                     System.out.println("****************************************");
                     String request = usrInput.nextLine();
                     // Request the file
                     sendMessage(request);
-                    // Waits for the response
+                    // update value of the file
+                    BufferedWriter writer = new BufferedWriter(new FileWriter(newConfigFile));
+                    writer.write(Integer.toString(this.numOfRequests));
+                    writer.close();
+                    //waits for the server response
                     processResponse(RequestUtils.getFileNameFromRequest(request), in);
-                    numOfRequests++;
-                } else{
-                    System.out.println("****************************************");
-                    System.out.println("***      Renewing the Handshake      ***");
-                    System.out.println("****************************************");
-                    serverPublicRSAKey = rsaKeyDistribution();
-                    sharedSecret = agreeOnSharedSecret(serverPublicRSAKey);
-                    numOfRequests = 0;
                 }
             }
-            System.out.println("Client 4 (no while, before closeConnections) : " + name);
             // Close connection
             closeConnection();
         } catch (Exception e) {
@@ -193,6 +247,24 @@ public class Client implements Runnable{
         }
         // Close connection
         closeConnection();
+    }
+
+    /**
+     * Renews the Handshake after 5 requests to the server
+     */
+    private void renewHandshake() throws Exception {
+        //generate keys
+        KeyPair keyPair = Encryption.generateKeyPair();
+        //set client private key
+        this.privateRSAKey = keyPair.getPrivate();
+        //set client public key
+        this.publicRSAKey = keyPair.getPublic();
+        // Performs the RSA key distribution
+        serverPublicRSAKey = rsaKeyDistribution();
+        this.sharedSecret = agreeOnSharedSecret(serverPublicRSAKey);
+        System.out.println("****************************************");
+        System.out.println("***        Handshake Renewed!        ***");
+        System.out.println("****************************************\n");
     }
 
     /**
@@ -208,17 +280,36 @@ public class Client implements Runnable{
             // Decrypts the message using the shared secret key
             byte[] decryptedMessage = Encryption.decryptMessage(response.getMessage(), sharedSecret.toByteArray());
             // Verifies the integrity of the decrypted message using the signature
-            byte[] computedMac = Integrity.generateDigest(decryptedMessage, MAC_KEY);
+            byte[] computedMac = Integrity.generateDigest(decryptedMessage, sharedSecret.toByteArray());
             if (!Integrity.verifyDigest(response.getSignature(), computedMac)) {
                 throw new RuntimeException("The message has been tampered with!");
             }
             //Writes the decrypted message to the console
-            System.out.println("Decrypted Message: " + new String(decryptedMessage));
+            System.out.println("Decrypted Message: " + new String(decryptedMessage) + "\n");
             // Writes the decrypted message to the file
             FileHandler.writeFile(this.name + "/files/" + fileName, new String(decryptedMessage).getBytes());
         } catch (StreamCorruptedException e) {
             e.printStackTrace();
         }
+    }
+
+
+    /**
+     * Responsible for letting the server know the clients name
+     *
+     * @param name - name of the client
+     * @throws Exception
+     */
+    public void greeting(String name) throws Exception {
+        // Encrypts the message
+        byte[] encryptedMessage = Encryption.encryptMessage(name.getBytes(), sharedSecret.toByteArray());
+        // Generates the MAC
+        byte[] digest = Integrity.generateDigest(name.getBytes(), sharedSecret.toByteArray());
+        // Creates the message object
+        Message messageObj = new Message(encryptedMessage, digest);
+        // Sends the message
+        out.writeUnshared(messageObj);
+        out.flush();
     }
 
 
@@ -230,15 +321,11 @@ public class Client implements Runnable{
      * @throws IOException when an I/O error occurs when sending the message
      */
     public void sendMessage(String filePath) throws Exception {
-        // Agree on a shared secret
-        //BigInteger sharedSecret = agreeOnSharedSecret ( receiverPublicRSAKey );
-        //this.numOfRequests++;
-        int num = MAX_NUM_OF_REQUESTS - this.numOfRequests;
-        System.out.println("Number of requests left before renew handshake: " + num);
+        this.numOfRequests++;
         // Encrypts the message
         byte[] encryptedMessage = Encryption.encryptMessage(filePath.getBytes(), sharedSecret.toByteArray());
         // Generates the MAC
-        byte[] digest = Integrity.generateDigest(filePath.getBytes(), MAC_KEY);
+        byte[] digest = Integrity.generateDigest(filePath.getBytes(), sharedSecret.toByteArray());
         // Creates the message object
         Message messageObj = new Message(encryptedMessage, digest);
         // Sends the message
