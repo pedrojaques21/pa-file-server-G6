@@ -14,7 +14,6 @@ import java.util.Scanner;
 public class ClientHandler extends Thread {
     private final ObjectInputStream in;
     private final ObjectOutputStream out;
-    private final Socket client;
     private boolean isConnected;
 
     private PrivateKey privateRSAKey;
@@ -26,8 +25,6 @@ public class ClientHandler extends Thread {
 
     private String clientName;
 
-    private final int maxNumOfRequests = 5;
-
     private int numOfRequests;
 
 
@@ -38,7 +35,6 @@ public class ClientHandler extends Thread {
      * @throws IOException when an I/O error occurs when creating the socket
      */
     public ClientHandler(Socket client) throws Exception {
-        this.client = client;
         in = new ObjectInputStream(client.getInputStream());
         out = new ObjectOutputStream(client.getOutputStream());
         isConnected = true; // TODO: Check if this is necessary or if it should be controlled
@@ -119,6 +115,7 @@ public class ClientHandler extends Thread {
         super.run();
         try {
             while (isConnected) {
+                int maxNumOfRequests = 5;
                 if (this.numOfRequests < maxNumOfRequests) {
                     System.out.println("Processing Request...");
                     byte[] content = receiveMessage();
@@ -191,6 +188,14 @@ public class ClientHandler extends Thread {
         }
     }
 
+    /**
+     * Decrypts the message and verifies its integrity. If the integrity is verified,
+     * the decrypted message is returned.
+     *
+     * @param messageObj is the message object that is being received from the client
+     * @return the decrypted message if its integrity is verified
+     * @throws Exception when the message cannot be decrypted or its integrity is not verified
+     */
     private byte[] decryptMessage(Message messageObj) throws Exception {
         // Extracts and decrypt the message
         byte[] decryptedMessage = Encryption.decryptMessage(messageObj.getMessage(), sharedSecret.toByteArray());
