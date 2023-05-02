@@ -1,12 +1,19 @@
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+import java.io.StreamCorruptedException;
 import java.math.BigInteger;
 import java.net.Socket;
 import java.nio.file.Files;
-import java.util.Arrays;
-import java.util.Scanner;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.util.Scanner;
 
 /**
  * This class represents the client. The client sends the messages to the server by means of a socket. The use of Object
@@ -71,10 +78,6 @@ public class Client {
 
     public Socket getClient() {
         return client;
-    }
-
-    public int getNumOfRequests() {
-        return numOfRequests;
     }
 
     public PublicKey getPublicRSAKey() {
@@ -222,19 +225,19 @@ public class Client {
      * Executes the client. It reads the file from the console and sends it to the server. It waits for the response and
      * writes the file to the temporary directory.
      */
-    public void execute() throws Exception {
+    public void execute() {
         Scanner usrInput = new Scanner(System.in);
         try {
             String clientName = "NAME" + " : " + this.name;
             greeting(clientName);
             File newConfigFile;
             if (clientExists) {
-                System.out.println("Vamos consultar");
+                System.out.println("Let's Check");
                 String filePath = userDirectory.getAbsolutePath() + File.separator + "client.config";
                 newConfigFile = new File(filePath);
                 Scanner scanner = new Scanner(newConfigFile);
                 int num = Integer.parseInt(scanner.nextLine());
-                System.out.println("Valor do num: " + num);
+                System.out.println("num value: " + num);
                 this.numOfRequests = num;
                 scanner.close();
             } else {
@@ -242,12 +245,12 @@ public class Client {
                 newConfigFile = new File(userDirectory.getAbsolutePath(), configFile);
                 if (!newConfigFile.exists()) {
                     newConfigFile.createNewFile();
-                    System.out.println("O arquivo " + newConfigFile + " foi criado com sucesso.");
+                    System.out.println("The file " + newConfigFile + " was successfully created.");
                     BufferedWriter writer = new BufferedWriter(new FileWriter(newConfigFile));
                     writer.write(Integer.toString(this.numOfRequests));
                     writer.close();
                 } else {
-                    System.out.println("O arquivo " + newConfigFile + " já existe.");
+                    System.out.println("The file " + newConfigFile + " already exists.");
                 }
             }
             while (isConnected) {

@@ -177,7 +177,7 @@ public class ClientHandler extends Thread {
                             this.numOfRequests = 0;
                         }
                     }else{
-                        System.out.println("O arquivo não existe ou não pode ser lido");
+                        System.out.println("The file either does not exists or can not be read");
                     }
                 }
             }
