@@ -2,7 +2,6 @@ import java.io.*;
 import java.math.BigInteger;
 import java.net.Socket;
 import java.nio.file.Files;
-import java.util.Arrays;
 import java.util.Scanner;
 import java.security.KeyPair;
 import java.security.PrivateKey;
@@ -321,8 +320,9 @@ public class Client {
      * Reads the response from the server, decrypts it, and writes the file to the temporary directory.
      *
      * @param fileName the name of the file to write
+     * @return
      */
-    public void processResponse(String fileName, ObjectInputStream in) throws Exception {
+    public byte[] processResponse(String fileName, ObjectInputStream in) throws Exception {
         try {
             System.out.println("File received...");
             // Reads the encrypted message from the server
@@ -338,9 +338,11 @@ public class Client {
             System.out.println("Decrypted Message: " + new String(decryptedMessage) + "\n");
             // Writes the decrypted message to the file
             FileHandler.writeFile(this.name + "/files/" + fileName, new String(decryptedMessage).getBytes());
+            return decryptedMessage;//Returns for testing purposes
         } catch (StreamCorruptedException e) {
             e.printStackTrace();
         }
+        return new byte[0];
     }
 
 
