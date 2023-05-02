@@ -19,20 +19,17 @@ public class Client {
     private final Socket client;
     private int numOfRequests;
 
-    private File newConfigFile;
-    private final int maxNumOfRequests = 5;
     private final ObjectInputStream in;
     private final ObjectOutputStream out;
     private final boolean isConnected;
-    private final String userDir;
     private PublicKey publicRSAKey;
     private PrivateKey privateRSAKey;
     private PublicKey serverPublicRSAKey;
     private BigInteger sharedSecret;
 
-    private boolean clientExists;
+    private final boolean clientExists;
 
-    private File userDirectory;
+    private final File userDirectory;
 
     /**
      * Constructs a Client object by specifying the port to connect to. The socket must be created before the sender can
@@ -64,7 +61,7 @@ public class Client {
         }
 
         // Create a temporary directory for putting the request files
-        userDir = Files.createTempDirectory("fileServer").toFile().getAbsolutePath();
+        String userDir = Files.createTempDirectory("fileServer").toFile().getAbsolutePath();
         System.out.println("Temporary directory path " + userDir);
     }
 
@@ -230,13 +227,13 @@ public class Client {
         try {
             String clientName = "NAME" + " : " + this.name;
             greeting(clientName);
+            File newConfigFile;
             if (clientExists) {
                 System.out.println("Vamos consultar");
                 String filePath = userDirectory.getAbsolutePath() + File.separator + "client.config";
                 newConfigFile = new File(filePath);
-                int num = 0;
                 Scanner scanner = new Scanner(newConfigFile);
-                num = Integer.parseInt(scanner.nextLine());
+                int num = Integer.parseInt(scanner.nextLine());
                 System.out.println("Valor do num: " + num);
                 this.numOfRequests = num;
                 scanner.close();
@@ -254,6 +251,7 @@ public class Client {
                 }
             }
             while (isConnected) {
+                int maxNumOfRequests = 5;
                 if (this.numOfRequests < maxNumOfRequests) {
                     // Reads the message to extract the path of the file
                     System.out.println("****************************************");
@@ -321,6 +319,8 @@ public class Client {
      * Reads the response from the server, decrypts it, and writes the file to the temporary directory.
      *
      * @param fileName the name of the file to write
+     * @param in the input stream from which to read the response
+     * @throws Exception if an error occurs while reading the response or writing the file     *
      */
     public void processResponse(String fileName, ObjectInputStream in) throws Exception {
         try {
@@ -348,7 +348,7 @@ public class Client {
      * Responsible for letting the server know the clients name
      *
      * @param name - name of the client
-     * @throws Exception
+     * @throws Exception if an error occurs while sending the message
      */
     private void greeting(String name) throws Exception {
         // Encrypts the message
@@ -385,6 +385,8 @@ public class Client {
 
     /**
      * Closes the connection by closing the socket and the streams.
+     *
+     * @throws RuntimeException if an error occurs while closing the connection
      */
     private void closeConnection() {
         try {
