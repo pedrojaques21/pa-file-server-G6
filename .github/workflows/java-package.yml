@@ -1,13 +1,13 @@
 name: Build package, documentation, and test coverage
 
 on:
-#  pull_request:
- #   branches:
-  #    - master
+  pull_request:
+    branches:
+      - master
   push:
     branches:
-      #- master
-      - dev-Jaques
+      - master
+      #- dev-Jaques
 
 jobs:
   build:
