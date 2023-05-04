@@ -1,6 +1,8 @@
 import org.junit.jupiter.api.*;
 
+import java.io.File;
 import java.net.Socket;
+import java.util.Scanner;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -32,10 +34,10 @@ public class ServerTests {
         String name = "testClient";
         //Client client = new Client(8000, name);
         String clientName = client.getName();
-        Socket clientScoket = client.getClient();
+        Socket clientSocket = client.getClient();
         assertAll(
                 () -> assertEquals(name, clientName),
-                () -> assertTrue(clientScoket.isBound())
+                () -> assertTrue(clientSocket.isBound())
         );
     }
 
