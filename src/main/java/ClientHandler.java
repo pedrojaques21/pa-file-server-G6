@@ -29,6 +29,9 @@ public class ClientHandler extends Thread {
     private final int MAX_NUM_OF_REQUESTS = 5;
     private int numOfRequests;
 
+    private String symmetricAlgorithm;
+    private int symmetricKey;
+
 
     /**
      * Creates a ClientHandler object by specifying the socket to communicate with the client. All the processing is
@@ -40,6 +43,13 @@ public class ClientHandler extends Thread {
         this.client = client;
         in = new ObjectInputStream(client.getInputStream());
         out = new ObjectOutputStream(client.getOutputStream());
+
+        // Get the encryption protocols from the client
+        this.symmetricAlgorithm = in.readUTF();
+        this.symmetricKey = in.readInt();
+        //algorithmValidation(this.symmetricAlgorithm);
+
+
         isConnected = true; // TODO: Check if this is necessary or if it should be controlled
         KeyPair keyPair = Encryption.generateKeyPair();
         this.numOfRequests = 0;
@@ -127,6 +137,12 @@ public class ClientHandler extends Thread {
                     System.out.println("****************************************");
                     System.out.println("***      Renewing the Handshake      ***");
                     System.out.println("****************************************");
+
+                    // Get the encryption protocols from the client
+                    this.symmetricAlgorithm = in.readUTF();
+                    this.symmetricKey = in.readInt();
+                    System.out.println("Received selected algorithm: " + this.symmetricAlgorithm + "!");
+
                     KeyPair keyPair = Encryption.generateKeyPair();
                     this.privateRSAKey = keyPair.getPrivate();
                     this.publicRSAKey = keyPair.getPublic();
@@ -188,7 +204,8 @@ public class ClientHandler extends Thread {
 
     private byte[] decryptMessage(Message messageObj) throws Exception {
         // Extracts and decrypt the message
-        byte[] decryptedMessage = Encryption.decryptMessage(messageObj.getMessage(), sharedSecret.toByteArray());
+        byte[] decryptedMessage = Encryption.decryptMessage(messageObj.getMessage(), sharedSecret.toByteArray(),
+                symmetricAlgorithm, symmetricKey);
         // Computes the digest of the received message
         byte[] computedDigest = Integrity.generateDigest(decryptedMessage, sharedSecret.toByteArray());
         // Verifies the integrity of the message
@@ -208,12 +225,26 @@ public class ClientHandler extends Thread {
         System.out.println("Hello " + this.clientName);
         this.numOfRequests++;
         //Sending the file to the client, before sending check if the file is too big
-        byte[] encryptedMessage = Encryption.encryptMessage(content, sharedSecret.toByteArray());
+        byte[] encryptedMessage = Encryption.encryptMessage(content, sharedSecret.toByteArray(),
+                symmetricAlgorithm, symmetricKey);
         byte[] digest = Integrity.generateDigest(content, sharedSecret.toByteArray());
         Message response = new Message(encryptedMessage, digest);
         out.writeObject(response);
         out.flush();
     }
+
+    /**
+     * Validation of algorithms supported by the server
+     */
+//    public void algorithmValidation(String algorithm) {
+//        if (!algorithm){
+//            out.writeUTF("NOK! Algorithm not supported by the server.\nSelect a valid one.");
+//        } else {
+//            out.writeUTF("OK! Algorithm supported.");
+//        }
+//
+//    }
+//    "Received selected algorithm: " + this.symmetricAlgorithm + "!"
 
 
     /**

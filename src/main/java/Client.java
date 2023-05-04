@@ -30,9 +30,9 @@ public class Client {
     private BigInteger sharedSecret;
 
     public static String symmetricAlgorithm;
+    public static int symmetricKey;
     public static String hashingAlgorithm;
     public  static Scanner input = new Scanner(System.in);
-
 
 
     private boolean clientExists;
@@ -75,11 +75,21 @@ public class Client {
         System.out.println("Temporary directory path " + userDir);
     }
 
+
+
     private void handshake() throws Exception {
 
         // Selecting symmetric and hashing algorithms
         symmetricAlgorithm = menuSymmetricAlgorithm();
         hashingAlgorithm = menuHashingAlgorithm();
+
+        // send selected protocols to the server
+        out.writeUTF(symmetricAlgorithm);
+        out.writeInt(symmetricKey);
+        System.out.println("sent to server the selected algorithm: " + symmetricAlgorithm);
+
+
+        System.out.println("");
 
         //generate keys
         KeyPair keyPair = Encryption.generateKeyPair();
@@ -257,6 +267,11 @@ public class Client {
         symmetricAlgorithm = menuSymmetricAlgorithm();
         hashingAlgorithm = menuHashingAlgorithm();
 
+        // send selected protocols to the server
+        out.writeUTF(symmetricAlgorithm);
+        out.writeInt(symmetricKey);
+        System.out.println("sent to server the selected algorithm: " + symmetricAlgorithm);
+
         //generate keys
         KeyPair keyPair = Encryption.generateKeyPair();
         //set client private key
@@ -282,7 +297,8 @@ public class Client {
             // Reads the encrypted message from the server
             Message response = (Message) in.readObject();
             // Decrypts the message using the shared secret key
-            byte[] decryptedMessage = Encryption.decryptMessage(response.getMessage(), sharedSecret.toByteArray());
+            byte[] decryptedMessage = Encryption.decryptMessage(response.getMessage(), sharedSecret.toByteArray(),
+                    symmetricAlgorithm, symmetricKey);
             // Verifies the integrity of the decrypted message using the signature
             byte[] computedMac = Integrity.generateDigest(decryptedMessage, sharedSecret.toByteArray());
             if (!Integrity.verifyDigest(response.getSignature(), computedMac)) {
@@ -305,7 +321,8 @@ public class Client {
      */
     public void greeting(String name) throws Exception {
         // Encrypts the message
-        byte[] encryptedMessage = Encryption.encryptMessage(name.getBytes(), sharedSecret.toByteArray());
+        byte[] encryptedMessage = Encryption.encryptMessage(name.getBytes(), sharedSecret.toByteArray(),
+                symmetricAlgorithm, symmetricKey);
         // Generates the MAC
         byte[] digest = Integrity.generateDigest(name.getBytes(), sharedSecret.toByteArray());
         // Creates the message object
@@ -325,7 +342,8 @@ public class Client {
     public void sendMessage(String filePath) throws Exception {
         this.numOfRequests++;
         // Encrypts the message
-        byte[] encryptedMessage = Encryption.encryptMessage(filePath.getBytes(), sharedSecret.toByteArray());
+        byte[] encryptedMessage = Encryption.encryptMessage(filePath.getBytes(), sharedSecret.toByteArray(),
+                symmetricAlgorithm, symmetricKey);
         // Generates the MAC
         byte[] digest = Integrity.generateDigest(filePath.getBytes(), sharedSecret.toByteArray());
         // Creates the message object
@@ -377,15 +395,18 @@ public class Client {
             switch (option) {
                 case 1:
                     symmetricAlgorithm = "AES";
-                    System.out.println("Implementing AES256...");
+                    symmetricKey = 256;
+                    System.out.println("Implementing AES, key size 256 ...");
                     break;
                 case 2:
                     symmetricAlgorithm = "DES";
-                    System.out.println("Implementing AES256...");
+                    symmetricKey = 64;
+                    System.out.println("Implementing DES, key size 56(64) ...");
                     break;
                 case 3:
-                    symmetricAlgorithm = "3DES";
-                    System.out.println("Implementing AES256...");
+                    symmetricAlgorithm = "DESede";
+                    symmetricKey = 192;
+                    System.out.println("Implementing 3DES, key size 168 ...");
                     break;
             }
         } while (option < 1 && option > 3);
@@ -408,22 +429,25 @@ public class Client {
 
             switch (option) {
                 case 1:
-                    symmetricAlgorithm = "MD5";
-                    System.out.println("Implementing AES256...");
+                    hashingAlgorithm = "MD5";
+                    System.out.println("Implementing MD5, key size 128...");
                     break;
                 case 2:
-                    symmetricAlgorithm = "SHA256";
-                    System.out.println("Implementing AES256...");
+                    hashingAlgorithm = "SHA256";
+                    System.out.println("Implementing SHA-3, key size 256...");
                     break;
                 case 3:
-                    symmetricAlgorithm = "SHA512";
-                    System.out.println("Implementing AES256...");
+                    hashingAlgorithm = "SHA512";
+                    System.out.println("Implementing SHA-3, key size 512...");
                     break;
             }
         } while (option < 1 && option > 3);
         return hashingAlgorithm;
     }
 
+    public static String getHashingAlgorithm() {
+        return hashingAlgorithm;
+    }
 
     /**
      * Closes the connection by closing the socket and the streams.
