@@ -10,10 +10,10 @@ import java.io.StreamCorruptedException;
 import java.math.BigInteger;
 import java.net.Socket;
 import java.nio.file.Files;
+import java.util.Scanner;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.util.Scanner;
 
 /**
  * This class represents the client. The client sends the messages to the server by means of a socket. The use of Object
@@ -325,7 +325,7 @@ public class Client {
      * @param in the input stream from which to read the response
      * @throws Exception if an error occurs while reading the response or writing the file     *
      */
-    public void processResponse(String fileName, ObjectInputStream in) throws Exception {
+    public byte[] processResponse(String fileName, ObjectInputStream in) throws Exception {
         try {
             System.out.println("File received...");
             // Reads the encrypted message from the server
@@ -341,9 +341,11 @@ public class Client {
             System.out.println("Decrypted Message: " + new String(decryptedMessage) + "\n");
             // Writes the decrypted message to the file
             FileHandler.writeFile(this.name + "/files/" + fileName, new String(decryptedMessage).getBytes());
+            return decryptedMessage;//Returns for testing purposes
         } catch (StreamCorruptedException e) {
             e.printStackTrace();
         }
+        return new byte[0];
     }
 
 
