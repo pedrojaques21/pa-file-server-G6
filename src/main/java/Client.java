@@ -29,9 +29,8 @@ public class Client {
     private PublicKey serverPublicRSAKey;
     private BigInteger sharedSecret;
 
-    public static String symmetricAlgorithm;
-    public static int symmetricKey;
-    public static String hashingAlgorithm;
+    private String symmetricAlgorithm;
+    private String hashingAlgorithm;
     public  static Scanner input = new Scanner(System.in);
 
 
@@ -50,6 +49,8 @@ public class Client {
 
         this.name = name;
         this.numOfRequests = 0;
+        this.symmetricAlgorithm = "";
+        this.hashingAlgorithm = "";
 
         client = new Socket(HOST, port);
         out = new ObjectOutputStream(client.getOutputStream());
@@ -75,19 +76,15 @@ public class Client {
         System.out.println("Temporary directory path " + userDir);
     }
 
-
-
     private void handshake() throws Exception {
 
-        // Selecting symmetric and hashing algorithms
-        symmetricAlgorithm = menuSymmetricAlgorithm();
-        hashingAlgorithm = menuHashingAlgorithm();
+        this.symmetricAlgorithm = menuSymmetricAlgorithm();
+        out.writeUTF(this.symmetricAlgorithm);
+        System.out.println("Sent to server the selected algorithm: " + this.symmetricAlgorithm);
 
-        // send selected protocols to the server
-        out.writeUTF(symmetricAlgorithm);
-        out.writeInt(symmetricKey);
-        System.out.println("sent to server the selected algorithm: " + symmetricAlgorithm);
-
+        this.hashingAlgorithm = menuHashingAlgorithm();
+        out.writeUTF(this.hashingAlgorithm);
+        System.out.println("Sent to server the selected algorithm: " + this.hashingAlgorithm);
 
         System.out.println("");
 
@@ -263,14 +260,13 @@ public class Client {
      */
     private void renewHandshake() throws Exception {
 
-        // Selecting symmetric and hashing algorithms
-        symmetricAlgorithm = menuSymmetricAlgorithm();
-        hashingAlgorithm = menuHashingAlgorithm();
+        this.symmetricAlgorithm = menuSymmetricAlgorithm();
+        out.writeUTF(this.symmetricAlgorithm);
+        System.out.println("Sent to server the selected algorithm: " + this.symmetricAlgorithm);
 
-        // send selected protocols to the server
-        out.writeUTF(symmetricAlgorithm);
-        out.writeInt(symmetricKey);
-        System.out.println("sent to server the selected algorithm: " + symmetricAlgorithm);
+        this.hashingAlgorithm = menuHashingAlgorithm();
+        out.writeUTF(this.hashingAlgorithm);
+        System.out.println("Sent to server the selected algorithm: " + this.hashingAlgorithm);
 
         //generate keys
         KeyPair keyPair = Encryption.generateKeyPair();
@@ -298,9 +294,10 @@ public class Client {
             Message response = (Message) in.readObject();
             // Decrypts the message using the shared secret key
             byte[] decryptedMessage = Encryption.decryptMessage(response.getMessage(), sharedSecret.toByteArray(),
-                    symmetricAlgorithm, symmetricKey);
+                    this.symmetricAlgorithm);
             // Verifies the integrity of the decrypted message using the signature
-            byte[] computedMac = Integrity.generateDigest(decryptedMessage, sharedSecret.toByteArray());
+            byte[] computedMac = Integrity.generateDigest(decryptedMessage, sharedSecret.toByteArray(),
+                    this.hashingAlgorithm);
             if (!Integrity.verifyDigest(response.getSignature(), computedMac)) {
                 throw new RuntimeException("The message has been tampered with!");
             }
@@ -322,9 +319,10 @@ public class Client {
     public void greeting(String name) throws Exception {
         // Encrypts the message
         byte[] encryptedMessage = Encryption.encryptMessage(name.getBytes(), sharedSecret.toByteArray(),
-                symmetricAlgorithm, symmetricKey);
+                this.symmetricAlgorithm);
         // Generates the MAC
-        byte[] digest = Integrity.generateDigest(name.getBytes(), sharedSecret.toByteArray());
+        byte[] digest = Integrity.generateDigest(name.getBytes(), sharedSecret.toByteArray(),
+                this.hashingAlgorithm);
         // Creates the message object
         Message messageObj = new Message(encryptedMessage, digest);
         // Sends the message
@@ -343,9 +341,10 @@ public class Client {
         this.numOfRequests++;
         // Encrypts the message
         byte[] encryptedMessage = Encryption.encryptMessage(filePath.getBytes(), sharedSecret.toByteArray(),
-                symmetricAlgorithm, symmetricKey);
+                this.symmetricAlgorithm);
         // Generates the MAC
-        byte[] digest = Integrity.generateDigest(filePath.getBytes(), sharedSecret.toByteArray());
+        byte[] digest = Integrity.generateDigest(filePath.getBytes(), sharedSecret.toByteArray(),
+                this.hashingAlgorithm);
         // Creates the message object
         Message messageObj = new Message(encryptedMessage, digest);
         // Sends the message
@@ -394,24 +393,24 @@ public class Client {
 
             switch (option) {
                 case 1:
-                    symmetricAlgorithm = "AES";
-                    symmetricKey = 256;
+                    this.symmetricAlgorithm = "AES";
+                    //symmetricKey = 256;
                     System.out.println("Implementing AES, key size 256 ...");
                     break;
                 case 2:
-                    symmetricAlgorithm = "DES";
-                    symmetricKey = 64;
+                    this.symmetricAlgorithm = "DES";
+                    //symmetricKey = 64;
                     System.out.println("Implementing DES, key size 56(64) ...");
                     break;
                 case 3:
-                    symmetricAlgorithm = "DESede";
-                    symmetricKey = 192;
+                    this.symmetricAlgorithm = "DESede";
+                    //symmetricKey = 192;
                     System.out.println("Implementing 3DES, key size 168 ...");
                     break;
             }
         } while (option < 1 && option > 3);
 
-        return symmetricAlgorithm;
+        return this.symmetricAlgorithm;
     }
 
     /**
@@ -429,23 +428,27 @@ public class Client {
 
             switch (option) {
                 case 1:
-                    hashingAlgorithm = "MD5";
+                    this.hashingAlgorithm = "HmacMD5";
                     System.out.println("Implementing MD5, key size 128...");
                     break;
                 case 2:
-                    hashingAlgorithm = "SHA256";
+                    this.hashingAlgorithm = "HmacSHA256";
                     System.out.println("Implementing SHA-3, key size 256...");
                     break;
                 case 3:
-                    hashingAlgorithm = "SHA512";
+                    this.hashingAlgorithm = "HmacSHA512";
                     System.out.println("Implementing SHA-3, key size 512...");
                     break;
             }
         } while (option < 1 && option > 3);
-        return hashingAlgorithm;
+        return this.hashingAlgorithm;
     }
 
-    public static String getHashingAlgorithm() {
+    public String getSymmetricAlgorithm() {
+        return symmetricAlgorithm;
+    }
+
+    public String getHashingAlgorithm() {
         return hashingAlgorithm;
     }
 

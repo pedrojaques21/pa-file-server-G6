@@ -32,8 +32,8 @@ public class Encryption {
      *
      * @throws Exception when the decryption fails
      */
-    public static byte[] encryptMessage(byte[] message , byte[] secretKey, String algorithm, int keySize ) throws Exception {
-        byte[] secretKeyPadded = ByteBuffer.allocate ( keySize/8 ).put ( secretKey ).array ( );
+    public static byte[] encryptMessage(byte[] message , byte[] secretKey, String algorithm ) throws Exception {
+        byte[] secretKeyPadded = ByteBuffer.allocate ( keySize(algorithm)/8 ).put ( secretKey ).array ( );
         SecretKeySpec secreteKeySpec = new SecretKeySpec ( secretKeyPadded , algorithm );
         Cipher cipher = Cipher.getInstance ( algorithm + "/ECB/PKCS5Padding" );
         cipher.init ( Cipher.ENCRYPT_MODE , secreteKeySpec );
@@ -46,51 +46,23 @@ public class Encryption {
      * @return the decrypted message as an array of bytes
      * @throws Exception when the encryption fails
      */
-    public static byte[] decryptMessage(byte[] message , byte[] secretKey, String algorithm, int keySize  ) throws Exception {
-        byte[] secretKeyPadded = ByteBuffer.allocate ( keySize/8 ).put ( secretKey ).array ( );
+    public static byte[] decryptMessage(byte[] message , byte[] secretKey, String algorithm  ) throws Exception {
+        byte[] secretKeyPadded = ByteBuffer.allocate ( keySize(algorithm)/8 ).put ( secretKey ).array ( );
         SecretKeySpec secreteKeySpec = new SecretKeySpec ( secretKeyPadded , algorithm );
         Cipher cipher = Cipher.getInstance ( algorithm + "/ECB/PKCS5Padding" );
         cipher.init ( Cipher.DECRYPT_MODE , secreteKeySpec );
         return cipher.doFinal ( message );
     }
 
-//    /**
-//     *
-//     * @param message   the message to be encrypted with DES algorithm
-//     * @param secretKey the secret key used to decrypt the message
-//     * @return the decrypted message as an array of bytes
-//     * @throws Exception when the encryption fails
-//     */
-//    public static byte[] encryptMessageDES(byte[] message, byte[] secretKey) throws Exception {
-//        byte[] secretKeyPadded = Arrays.copyOf(secretKey, 8);
-//        SecretKeySpec secretKeySpec = new SecretKeySpec(secretKeyPadded, "DES");
-//        Cipher cipher = Cipher.getInstance("DES/ECB/PKCS5Padding");
-//        cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec);
-//        return cipher.doFinal(message);
-//    }
-//
-//    public static byte[] decryptMessageDES(byte[] encryptedMessage, byte[] secretKey) throws Exception {
-//        byte[] secretKeyPadded = Arrays.copyOf(secretKey, 8);
-//        SecretKeySpec secretKeySpec = new SecretKeySpec(secretKeyPadded, "DES");
-//        Cipher cipher = Cipher.getInstance("DES/ECB/PKCS5Padding");
-//        cipher.init(Cipher.DECRYPT_MODE, secretKeySpec);
-//        return cipher.doFinal(encryptedMessage);
-//    }
-//
-//    public static byte[] encryptMessage3DES(byte[] message, byte[] secretKey) throws Exception {
-//        byte[] secretKeyPadded = Arrays.copyOf(secretKey, 24);
-//        SecretKeySpec secretKeySpec = new SecretKeySpec(secretKeyPadded, "DESede");
-//        Cipher cipher = Cipher.getInstance("DESede/ECB/PKCS5Padding");
-//        cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec);
-//        return cipher.doFinal(message);
-//    }
-//
-//    public static byte[] decryptMessage3DES(byte[] encryptedMessage, byte[] secretKey) throws Exception {
-//        byte[] secretKeyPadded = Arrays.copyOf(secretKey, 24);
-//        SecretKeySpec secretKeySpec = new SecretKeySpec(secretKeyPadded, "DESede");
-//        Cipher cipher = Cipher.getInstance("DESede/ECB/PKCS5Padding");
-//        cipher.init(Cipher.DECRYPT_MODE, secretKeySpec);
-//        return cipher.doFinal(encryptedMessage);
-//    }
+    // KeySize assigned for each algorithm
+    private static int keySize(String algorithm) {
+        if (algorithm.equals("DESede")) {
+            return 24;
+        } else if (algorithm.equals("DES")) {
+            return 64;
+        } else {    // "AES"
+            return 256;
+        }
+    }
 
 }

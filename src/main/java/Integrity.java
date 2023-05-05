@@ -7,8 +7,6 @@ import java.util.Arrays;
      */
     public class Integrity {
 
-        private static final String MAC_ALGORITHM = "HmacSHA256";
-
         /**
          * Generates the message authentication code (MAC) of the message.
          *
@@ -16,9 +14,9 @@ import java.util.Arrays;
          *
          * @throws Exception when the MAC generation fails
          */
-        public static byte[] generateDigest ( byte[] message , byte[] macKey ) throws Exception {
-            SecretKeySpec secretKeySpec = new SecretKeySpec ( macKey , MAC_ALGORITHM );
-            Mac mac = Mac.getInstance ( MAC_ALGORITHM );
+        public static byte[] generateDigest ( byte[] message , byte[] macKey, String MAC_ALGORITHM  ) throws Exception {
+            SecretKeySpec secretKeySpec = new SecretKeySpec ( macKey , MAC_ALGORITHM  );
+            Mac mac = Mac.getInstance ( MAC_ALGORITHM  );
             mac.init ( secretKeySpec );
             return mac.doFinal ( message );
         }

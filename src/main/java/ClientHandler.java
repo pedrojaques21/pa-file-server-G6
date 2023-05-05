@@ -30,7 +30,7 @@ public class ClientHandler extends Thread {
     private int numOfRequests;
 
     private String symmetricAlgorithm;
-    private int symmetricKey;
+    private String hashingAlgorithm;
 
 
     /**
@@ -41,14 +41,20 @@ public class ClientHandler extends Thread {
      */
     public ClientHandler(Socket client) throws Exception {
         this.client = client;
+        this.symmetricAlgorithm = "";
+        this.hashingAlgorithm = "";
         in = new ObjectInputStream(client.getInputStream());
         out = new ObjectOutputStream(client.getOutputStream());
 
-        // Get the encryption protocols from the client
+        // Get the encryption symmetric algorithm from the client
         this.symmetricAlgorithm = in.readUTF();
-        this.symmetricKey = in.readInt();
-        //algorithmValidation(this.symmetricAlgorithm);
+        System.out.println("Received selected algorithm: " + this.symmetricAlgorithm);
+        //verifyAlgorithmServerSupport(this.symmetricAlgorithm);
 
+        // Get encryption hashing algorithm from the client
+        this.hashingAlgorithm = in.readUTF();
+        System.out.println("Received selected algorithm: " + this.hashingAlgorithm.replace("Hmac", ""));
+        //verifyAlgorithmServerSupport(this.hashingAlgorithm);
 
         isConnected = true; // TODO: Check if this is necessary or if it should be controlled
         KeyPair keyPair = Encryption.generateKeyPair();
@@ -138,10 +144,15 @@ public class ClientHandler extends Thread {
                     System.out.println("***      Renewing the Handshake      ***");
                     System.out.println("****************************************");
 
-                    // Get the encryption protocols from the client
+                    // Get the encryption symmetric algorithm from the client
                     this.symmetricAlgorithm = in.readUTF();
-                    this.symmetricKey = in.readInt();
-                    System.out.println("Received selected algorithm: " + this.symmetricAlgorithm + "!");
+                    System.out.println("Received selected algorithm: " + this.symmetricAlgorithm);
+                    //verifyAlgorithmServerSupport(this.symmetricAlgorithm);
+
+                    // Get encryption hashing algorithm from the client
+                    this.hashingAlgorithm = in.readUTF();
+                    System.out.println("Received selected algorithm: " + this.hashingAlgorithm.replace("Hmac", ""));
+                    //verifyAlgorithmServerSupport(this.hashingAlgorithm);
 
                     KeyPair keyPair = Encryption.generateKeyPair();
                     this.privateRSAKey = keyPair.getPrivate();
@@ -205,9 +216,9 @@ public class ClientHandler extends Thread {
     private byte[] decryptMessage(Message messageObj) throws Exception {
         // Extracts and decrypt the message
         byte[] decryptedMessage = Encryption.decryptMessage(messageObj.getMessage(), sharedSecret.toByteArray(),
-                symmetricAlgorithm, symmetricKey);
+                symmetricAlgorithm);
         // Computes the digest of the received message
-        byte[] computedDigest = Integrity.generateDigest(decryptedMessage, sharedSecret.toByteArray());
+        byte[] computedDigest = Integrity.generateDigest(decryptedMessage, sharedSecret.toByteArray(),hashingAlgorithm);
         // Verifies the integrity of the message
         if (!Integrity.verifyDigest(messageObj.getSignature(), computedDigest)) {
             throw new RuntimeException("The integrity of the message is not verified");
@@ -225,13 +236,47 @@ public class ClientHandler extends Thread {
         System.out.println("Hello " + this.clientName);
         this.numOfRequests++;
         //Sending the file to the client, before sending check if the file is too big
-        byte[] encryptedMessage = Encryption.encryptMessage(content, sharedSecret.toByteArray(),
-                symmetricAlgorithm, symmetricKey);
-        byte[] digest = Integrity.generateDigest(content, sharedSecret.toByteArray());
+        byte[] encryptedMessage = Encryption.encryptMessage(content, sharedSecret.toByteArray(), symmetricAlgorithm);
+        byte[] digest = Integrity.generateDigest(content, sharedSecret.toByteArray(), hashingAlgorithm);
         Message response = new Message(encryptedMessage, digest);
         out.writeObject(response);
         out.flush();
     }
+
+    /**
+     * Receive the algorithms selected by the client, and verify if the server support them
+     */
+    private void verifyAlgorithmServerSupport(String algorithm) throws IOException {
+        String algorithmsNameGrouped = "AESDES3DESede";
+        algorithm = in.readUTF();
+        System.out.println("Received selected algorithm: " + algorithm);
+        out.writeBoolean((true ? true : false));
+//
+//        String algorithmsNameGrouped = "AESDES3DESede";
+//        try {
+//            algorithm = in.readUTF();
+//        } catch (IOException e) {
+//            throw new RuntimeException(e);
+//        } finally{
+//            System.out.println("Received selected algorithm: " + algorithm);
+//            Boolean algorithmExists = (algorithmsNameGrouped.contains(algorithm) ? true : false);
+//            try {
+//                out.writeBoolean((algorithmExists ? true : false));
+//            } catch (IOException e) {
+//                throw new RuntimeException(e);
+//            }
+//        }
+
+
+
+    }
+
+
+
+
+    //algorithmValidation(this.symmetricAlgorithm);
+
+    //algorithmValidation(this.symmetricAlgorithm);
 
     /**
      * Validation of algorithms supported by the server
