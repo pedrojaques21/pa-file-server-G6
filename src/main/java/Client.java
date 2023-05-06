@@ -30,14 +30,10 @@ public class Client {
     private PrivateKey privateRSAKey;
     private PublicKey serverPublicRSAKey;
     private BigInteger sharedSecret;
-
     private String symmetricAlgorithm;
     private String hashingAlgorithm;
     public static Scanner input = new Scanner(System.in);
-
-
     private final boolean clientExists;
-
     private final File userDirectory;
 
     /**
@@ -108,6 +104,11 @@ public class Client {
         return in;
     }
 
+    /**
+     * Realizes the Diffie-Hellman key distribution protocol to agree on a shared private key.
+     *
+     * @throws Exception when an I/O error occurs when closing the socket
+     */
     private void handshake() throws Exception {
 
         this.symmetricAlgorithm = menuSymmetricAlgorithm();
@@ -218,6 +219,8 @@ public class Client {
     /**
      * Executes the client. It reads the file from the console and sends it to the server. It waits for the response and
      * writes the file to the temporary directory.
+     *
+     * @throws Exception when an error occurs during the execution of the client
      */
     public void execute() {
         Scanner usrInput = new Scanner(System.in);
@@ -272,6 +275,8 @@ public class Client {
 
     /**
      * Renews the Handshake after 5 requests to the server
+     *
+     * @throws Exception when the handshake fails to renew
      */
     void renewHandshake() throws Exception {
 
@@ -390,9 +395,9 @@ public class Client {
 
 
     /**
-     * Selecting alternative options of symetric algorythm
+     * Selecting alternative options of symmetric algorithm
      *
-     * @return
+     * @return the selected algorithm for symmetric encryption
      */
     public String menuSymmetricAlgorithm() {
         int option;
@@ -430,9 +435,9 @@ public class Client {
     }
 
     /**
-     * Selecting alternative options of hashing algorythm
+     * Selecting alternative options of hashing algorithm
      *
-     * @return
+     * @return The hashing algorithm selected
      */
     public String menuHashingAlgorithm() {
         int option;

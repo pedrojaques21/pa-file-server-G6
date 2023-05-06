@@ -20,24 +20,16 @@ public class ClientHandler extends Thread {
     private final ObjectOutputStream out;
     private final Socket client;
     private boolean isConnected;
-
     private PrivateKey privateRSAKey;
     private PublicKey publicRSAKey;
-
     private PublicKey senderPublicRSAKey;
-
     private BigInteger sharedSecret;
-
     private String clientName;
-
     private int numOfRequests;
-
     private String symmetricAlgorithm;
     private String hashingAlgorithm;
-
     private boolean isSupported;
     private boolean hashIsSupported;
-
 
     /**
      * Creates a ClientHandler object by specifying the socket to communicate with the client. All the processing is
@@ -80,6 +72,11 @@ public class ClientHandler extends Thread {
 
     }
 
+    /**
+     * Verifies if the algorithm is supported by the server.
+     *
+     * @throws IOException when an I/O error occurs when closing the socket
+     */
     private void sendSuccessMessage() throws IOException {
         out.writeUTF("The selected Algorithm is supported by this server, enjoy!");
         out.flush();
@@ -295,6 +292,12 @@ public class ClientHandler extends Thread {
         return isAlgorithmAvailable;
     }
 
+    /**
+     * Verifies if the algorithm received from the client is supported by the server.
+     *
+     * @param receivedAlgorithm the algorithm received from the client
+     * @return true if the algorithm is supported by the server, false otherwise
+     */
     private boolean verifyHashAlgorithmServerSupport(String receivedAlgorithm) {
         String[] availableAlgorithms = {"HmacMD5", "HmacSHA256","HmacSHA512"};
         System.out.println("Received selected algorithm: " + receivedAlgorithm);

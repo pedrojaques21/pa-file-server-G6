@@ -52,8 +52,8 @@ public class FileHandler {
 
     /**
      * Reads a textFile and returns an HashMap
-     * @param requestsFilePath
-     * @return
+     * @param requestsFilePath the path of the file to read
+     * @return the content of the file in bytes
      */
     public static HashMap<String, Integer> readHashMapFromFile(String requestsFilePath) {
         HashMap<String, Integer> myHashMap = new HashMap<>();
@@ -76,8 +76,8 @@ public class FileHandler {
 
     /**
      * Writes a HashMap to a textFile
-     * @param myHashMap
-     * @param filePath
+     * @param myHashMap the HashMap to write
+     * @param filePath the path of the file to write
      */
     public static void saveHashMapToTextFile(HashMap<String, Integer> myHashMap, String filePath) {
         try {
@@ -95,7 +95,7 @@ public class FileHandler {
 
     /**
      * Check if file exists, otherwise creates a new one.
-     * @param filePath
+     * @param filePath the path of the file to check
      */
     public static void createTextFileIfNotExists(String filePath) {
 
@@ -114,7 +114,7 @@ public class FileHandler {
 
     /**
      * Prints on the console the contents of a HashMap
-     * @param myHashMap
+     * @param myHashMap the HashMap to print
      */
     public static void printHashMap(HashMap<String, Integer> myHashMap) {
         System.out.println("\t\tName\tRequests");

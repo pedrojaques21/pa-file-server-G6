@@ -60,6 +60,8 @@ public class Server implements Runnable {
 
     /**
      * Closes the connection and the associated streams.
+     *
+     * @throws IOException if an I/O error occurs when closing the socket
      */
     private void closeConnection() {
         try {
