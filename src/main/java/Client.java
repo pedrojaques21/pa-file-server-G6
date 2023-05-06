@@ -4,6 +4,7 @@ import java.net.Socket;
 import java.nio.file.Files;
 import java.util.Scanner;
 import java.security.KeyPair;
+import java.util.Arrays;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 
@@ -54,16 +55,17 @@ public class Client {
         client = new Socket(HOST, port);
         this.out = new ObjectOutputStream(client.getOutputStream());
         this.in = new ObjectInputStream(client.getInputStream());
-        isConnected = true; // TODO: Check if this is necessary or if it should be controlled
+        isConnected = true;
         // Create a "private" directory for the client
         userDirectory = new File(this.name);
         if (!userDirectory.exists()) {
             clientExists = false;
             userDirectory.mkdirs();
         } else {
+            MainServer.numOfRequestsMap = FileHandler.readHashMapFromFile(MainServer.NREQUESTSMAP_PATH);
+            this.numOfRequests = MainServer.numOfRequestsMap.get(this.name);
             clientExists = true;
         }
-        //algorithmMenu();
         handshake();
         File filesDirectory = new File(userDirectory.getAbsolutePath() + "/files");
         if (!filesDirectory.exists()) {
@@ -117,6 +119,8 @@ public class Client {
         this.hashingAlgorithm = menuHashingAlgorithm();
         out.writeUTF(this.hashingAlgorithm);
         System.out.println("Sent to server the selected algorithm: " + this.hashingAlgorithm);
+
+
 
         System.out.println("");
 
@@ -206,77 +210,33 @@ public class Client {
         out.flush();
     }
 
-    private void algorithmMenu() {
-        Scanner algorithmInput = new Scanner(System.in);
-        System.out.println("Which encryption Algorithm would you like to use? ");
-        System.out.println("1 - AES");
-        System.out.println("2 - DES");
-        System.out.println("3 - 3DES");
-        System.out.println("4 - RSA");
-        int option = algorithmInput.nextInt();
-        switch (option){
-            case 1 -> {
-                System.out.println("*** AES Algorithm chose ***");
-            }
-            case 2 -> {
-                System.out.println("*** DES Algorithm chose ***");
-            }
-            case 3 -> {
-                System.out.println("*** 3DES Algorithm chose ***");
-            }
-            case 4 -> {
-                System.out.println("*** RSA Algorithm chose ***");
-            }
-            default -> {
-                System.out.println("*** Invalid Algorithm! ***\n*** Shutting Down ***");
-            }
-        }
-        System.out.println("Which Hashing Algorithm would you like to use? ");
-        System.out.println("1 - AES");
-        System.out.println("2 - DES");
-        System.out.println("3 - 3DES");
-        System.out.println("4 - RSA");
-    }
-
-
     /**
      * Executes the client. It reads the file from the console and sends it to the server. It waits for the response and
      * writes the file to the temporary directory.
      */
     public void execute() throws Exception {
         Scanner usrInput = new Scanner(System.in);
-
-        userRegistration(name); // 0 if new or a value from MainServer.numOfRequestsMap
         try {
             String clientName = "NAME" + " : " + this.name;
             greeting(clientName);
             if (clientExists) {
-                System.out.println("Vamos consultar");
+                System.out.println("*** Welcome again, " + this.name + "! ***");
+                System.out.println("Number of Requests Remaining: " + numOfRequests + 1);
+
                 String filePath = userDirectory.getAbsolutePath() + File.separator + "client.config";
                 newConfigFile = new File(filePath);
                 int num = 0;
                 Scanner scanner = new Scanner(newConfigFile);
                 num = Integer.parseInt(scanner.nextLine());
-                System.out.println("Valor do num: " + num);
                 this.numOfRequests = num;
                 scanner.close();
             } else {
-                String configFile = "client.config";
-                newConfigFile = new File(userDirectory.getAbsolutePath(), configFile);
-                if (!newConfigFile.exists()) {
-                    newConfigFile.createNewFile();
-                    System.out.println("O arquivo " + newConfigFile + " foi criado com sucesso.");
-                    BufferedWriter writer = new BufferedWriter(new FileWriter(newConfigFile));
-                    writer.write(Integer.toString(this.numOfRequests));
-                    writer.close();
-                } else {
-                    System.out.println("O arquivo " + newConfigFile + " já existe.");
-                }
+                System.out.println("*** Welcome, " + this.name + "! ***\n You are now able to enjoy file storage.");
+
             }
             while (isConnected) {
                 if (this.numOfRequests < MAX_NUM_OF_REQUESTS) {
                     // Reads the message to extract the path of the file
-                    System.out.println("TEST: " + Arrays.toString(sharedSecret.toByteArray()));
                     System.out.println("****************************************");
                     System.out.println("***    Write the path of the file    ***");
                     System.out.println("****************************************\n");
@@ -333,6 +293,8 @@ public class Client {
         out.writeUTF(this.hashingAlgorithm);
         System.out.println("Sent to server the selected algorithm: " + this.hashingAlgorithm);
 
+        String serverResponse = in.readUTF(); // Wait for the server response
+        System.out.println("Server response: " + serverResponse);
         //generate keys
         KeyPair keyPair = Encryption.generateKeyPair();
         //set client private key
@@ -420,31 +382,6 @@ public class Client {
         out.flush();
     }
 
-    /**
-     * Reads numOfRequestsMap from the file NREQUESTSMAP_PATH , hashMap witch has the users
-     * and the respective quantities of requests. If it´s a new user, numOfRequests = 0,
-     * otherwise, numOfRequests receives the HasMap corresponding value.
-     * @param user
-     * @return the number of the user requests
-     */
-    public int userRegistration(String user) {
-        System.out.println();
-        MainServer.numOfRequestsMap = FileHandler.readHashMapFromFile(MainServer.NREQUESTSMAP_PATH);
-        //FileHandler.printHashMap(MainServer.numOfRequestsMap);
-        if (!MainServer.numOfRequestsMap.containsKey(name)) {
-            MainServer.numOfRequestsMap.put(name, 0);
-            System.out.println("*** Welcome, " + name + "!");
-            System.out.println("You are now able to enjoy file storage.");
-        } else {
-            numOfRequests = MainServer.numOfRequestsMap.get(name);
-            System.out.println("*** Welcome again, " + name + "!");
-            System.out.println("Number of Requests: " + numOfRequests);
-        }
-        FileHandler.saveHashMapToTextFile(MainServer.numOfRequestsMap, MainServer.NREQUESTSMAP_PATH); //shouldn't be needed here
-        //FileHandler.printHashMap(MainServer.numOfRequestsMap);
-
-        return numOfRequests;
-    }
 
     /**
      * Selecting alternative options of symetric algorythm

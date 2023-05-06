@@ -1,4 +1,3 @@
 Joao:2
-joe:0
-Carla:0
-Ana:4
+James:0
+Jack:4

@@ -27,6 +27,7 @@ public class MainServer {
 
         System.out.println("Stopping the Server...");
         FileHandler.printHashMap(numOfRequestsMap);
+        System.out.println("NUMOF: " + numOfRequestsMap);
         FileHandler.saveHashMapToTextFile(numOfRequestsMap, NREQUESTSMAP_PATH);
         System.exit(0);
 
