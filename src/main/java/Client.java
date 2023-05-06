@@ -17,9 +17,8 @@ public class Client {
     private static final String HOST = "0.0.0.0";
     private final Socket client;
     private int numOfRequests;
-
+    private final int MAX_NUM_OF_REQUESTS = 5;
     private File newConfigFile;
-    private final int maxNumOfRequests = 5;
     private final ObjectInputStream in;
     private final ObjectOutputStream out;
     private final boolean isConnected;
@@ -28,6 +27,11 @@ public class Client {
     private PrivateKey privateRSAKey;
     private PublicKey serverPublicRSAKey;
     private BigInteger sharedSecret;
+
+    private String symmetricAlgorithm;
+    private String hashingAlgorithm;
+    public  static Scanner input = new Scanner(System.in);
+
 
     private boolean clientExists;
 
@@ -41,8 +45,12 @@ public class Client {
      * @throws IOException when an I/O error occurs when creating the socket
      */
     public Client(int port, String name) throws Exception {
-        this.numOfRequests = 0;
+
         this.name = name;
+        this.numOfRequests = 0;
+        this.symmetricAlgorithm = "";
+        this.hashingAlgorithm = "";
+
         client = new Socket(HOST, port);
         this.out = new ObjectOutputStream(client.getOutputStream());
         this.in = new ObjectInputStream(client.getInputStream());
@@ -101,6 +109,17 @@ public class Client {
     }
 
     private void handshake() throws Exception {
+
+        this.symmetricAlgorithm = menuSymmetricAlgorithm();
+        out.writeUTF(this.symmetricAlgorithm);
+        System.out.println("Sent to server the selected algorithm: " + this.symmetricAlgorithm);
+
+        this.hashingAlgorithm = menuHashingAlgorithm();
+        out.writeUTF(this.hashingAlgorithm);
+        System.out.println("Sent to server the selected algorithm: " + this.hashingAlgorithm);
+
+        System.out.println("");
+
         //generate keys
         KeyPair keyPair = Encryption.generateKeyPair();
 
@@ -132,7 +151,6 @@ public class Client {
 
         this.sharedSecret = agreeOnSharedSecret(serverPublicRSAKey);
     }
-
 
     /**
      * Performs the Diffie-Hellman algorithm to agree on a shared private key.
@@ -227,6 +245,8 @@ public class Client {
      */
     public void execute() throws Exception {
         Scanner usrInput = new Scanner(System.in);
+
+        userRegistration(name); // 0 if new or a value from MainServer.numOfRequestsMap
         try {
             String clientName = "NAME" + " : " + this.name;
             greeting(clientName);
@@ -254,8 +274,9 @@ public class Client {
                 }
             }
             while (isConnected) {
-                if (this.numOfRequests < maxNumOfRequests) {
+                if (this.numOfRequests < MAX_NUM_OF_REQUESTS) {
                     // Reads the message to extract the path of the file
+                    System.out.println("TEST: " + Arrays.toString(sharedSecret.toByteArray()));
                     System.out.println("****************************************");
                     System.out.println("***    Write the path of the file    ***");
                     System.out.println("****************************************\n");
@@ -302,7 +323,16 @@ public class Client {
     /**
      * Renews the Handshake after 5 requests to the server
      */
-    public void renewHandshake() throws Exception {
+    private void renewHandshake() throws Exception {
+
+        this.symmetricAlgorithm = menuSymmetricAlgorithm();
+        out.writeUTF(this.symmetricAlgorithm);
+        System.out.println("Sent to server the selected algorithm: " + this.symmetricAlgorithm);
+
+        this.hashingAlgorithm = menuHashingAlgorithm();
+        out.writeUTF(this.hashingAlgorithm);
+        System.out.println("Sent to server the selected algorithm: " + this.hashingAlgorithm);
+
         //generate keys
         KeyPair keyPair = Encryption.generateKeyPair();
         //set client private key
@@ -329,9 +359,11 @@ public class Client {
             // Reads the encrypted message from the server
             Message response = (Message) in.readObject();
             // Decrypts the message using the shared secret key
-            byte[] decryptedMessage = Encryption.decryptMessage(response.getMessage(), sharedSecret.toByteArray());
+            byte[] decryptedMessage = Encryption.decryptMessage(response.getMessage(), sharedSecret.toByteArray(),
+                    this.symmetricAlgorithm);
             // Verifies the integrity of the decrypted message using the signature
-            byte[] computedMac = Integrity.generateDigest(decryptedMessage, sharedSecret.toByteArray());
+            byte[] computedMac = Integrity.generateDigest(decryptedMessage, sharedSecret.toByteArray(),
+                    this.hashingAlgorithm);
             if (!Integrity.verifyDigest(response.getSignature(), computedMac)) {
                 throw new RuntimeException("The message has been tampered with!");
             }
@@ -346,7 +378,6 @@ public class Client {
         return new byte[0];
     }
 
-
     /**
      * Responsible for letting the server know the clients name
      *
@@ -355,16 +386,17 @@ public class Client {
      */
     private void greeting(String name) throws Exception {
         // Encrypts the message
-        byte[] encryptedMessage = Encryption.encryptMessage(name.getBytes(), sharedSecret.toByteArray());
+        byte[] encryptedMessage = Encryption.encryptMessage(name.getBytes(), sharedSecret.toByteArray(),
+                this.symmetricAlgorithm);
         // Generates the MAC
-        byte[] digest = Integrity.generateDigest(name.getBytes(), sharedSecret.toByteArray());
+        byte[] digest = Integrity.generateDigest(name.getBytes(), sharedSecret.toByteArray(),
+                this.hashingAlgorithm);
         // Creates the message object
         Message messageObj = new Message(encryptedMessage, digest);
         // Sends the message
         out.writeUnshared(messageObj);
         out.flush();
     }
-
 
     /**
      * Sends the path of the file to the server using the OutputStream of the socket. The message is sent as an object
@@ -376,14 +408,116 @@ public class Client {
     public void sendMessage(String filePath) throws Exception {
         this.numOfRequests++;
         // Encrypts the message
-        byte[] encryptedMessage = Encryption.encryptMessage(filePath.getBytes(), sharedSecret.toByteArray());
+        byte[] encryptedMessage = Encryption.encryptMessage(filePath.getBytes(), sharedSecret.toByteArray(),
+                this.symmetricAlgorithm);
         // Generates the MAC
-        byte[] digest = Integrity.generateDigest(filePath.getBytes(), sharedSecret.toByteArray());
+        byte[] digest = Integrity.generateDigest(filePath.getBytes(), sharedSecret.toByteArray(),
+                this.hashingAlgorithm);
         // Creates the message object
         Message messageObj = new Message(encryptedMessage, digest);
         // Sends the message
         out.writeUnshared(messageObj);
         out.flush();
+    }
+
+    /**
+     * Reads numOfRequestsMap from the file NREQUESTSMAP_PATH , hashMap witch has the users
+     * and the respective quantities of requests. If it´s a new user, numOfRequests = 0,
+     * otherwise, numOfRequests receives the HasMap corresponding value.
+     * @param user
+     * @return the number of the user requests
+     */
+    public int userRegistration(String user) {
+        System.out.println();
+        MainServer.numOfRequestsMap = FileHandler.readHashMapFromFile(MainServer.NREQUESTSMAP_PATH);
+        //FileHandler.printHashMap(MainServer.numOfRequestsMap);
+        if (!MainServer.numOfRequestsMap.containsKey(name)) {
+            MainServer.numOfRequestsMap.put(name, 0);
+            System.out.println("*** Welcome, " + name + "!");
+            System.out.println("You are now able to enjoy file storage.");
+        } else {
+            numOfRequests = MainServer.numOfRequestsMap.get(name);
+            System.out.println("*** Welcome again, " + name + "!");
+            System.out.println("Number of Requests: " + numOfRequests);
+        }
+        FileHandler.saveHashMapToTextFile(MainServer.numOfRequestsMap, MainServer.NREQUESTSMAP_PATH); //shouldn't be needed here
+        //FileHandler.printHashMap(MainServer.numOfRequestsMap);
+
+        return numOfRequests;
+    }
+
+    /**
+     * Selecting alternative options of symetric algorythm
+     * @return
+     */
+    public String menuSymmetricAlgorithm() {
+        int option;
+        do {
+            System.out.println("**********************************");
+            System.out.println("* Encryption Symmetric Algorithm *");
+            System.out.println("* (1)-AES256; (2)-DES; (3)-3DES  *");
+            System.out.println("**********************************");
+            option = input.nextInt();
+
+            switch (option) {
+                case 1:
+                    this.symmetricAlgorithm = "AES";
+                    //symmetricKey = 256;
+                    System.out.println("Implementing AES, key size 256 ...");
+                    break;
+                case 2:
+                    this.symmetricAlgorithm = "DES";
+                    //symmetricKey = 64;
+                    System.out.println("Implementing DES, key size 56(64) ...");
+                    break;
+                case 3:
+                    this.symmetricAlgorithm = "DESede";
+                    //symmetricKey = 192;
+                    System.out.println("Implementing 3DES, key size 168 ...");
+                    break;
+            }
+        } while (option < 1 && option > 3);
+
+        return this.symmetricAlgorithm;
+    }
+
+    /**
+     * Selecting alternative options of hashing algorythm
+     * @return
+     */
+    public String menuHashingAlgorithm() {
+        int option;
+        do {
+            System.out.println("***********************************");
+            System.out.println("*        Hashing Algorithm        *");
+            System.out.println("* (1)-MD5; (2)-SHA256; (3)-SHA512 *");
+            System.out.println("***********************************");
+            option = input.nextInt();
+
+            switch (option) {
+                case 1:
+                    this.hashingAlgorithm = "HmacMD5";
+                    System.out.println("Implementing MD5, key size 128...");
+                    break;
+                case 2:
+                    this.hashingAlgorithm = "HmacSHA256";
+                    System.out.println("Implementing SHA-3, key size 256...");
+                    break;
+                case 3:
+                    this.hashingAlgorithm = "HmacSHA512";
+                    System.out.println("Implementing SHA-3, key size 512...");
+                    break;
+            }
+        } while (option < 1 && option > 3);
+        return this.hashingAlgorithm;
+    }
+
+    public String getSymmetricAlgorithm() {
+        return symmetricAlgorithm;
+    }
+
+    public String getHashingAlgorithm() {
+        return hashingAlgorithm;
     }
 
     /**

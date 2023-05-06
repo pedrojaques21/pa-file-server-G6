@@ -26,9 +26,11 @@ public class ClientHandler extends Thread {
 
     private String clientName;
 
-    private final int maxNumOfRequests = 5;
-
+    private final int MAX_NUM_OF_REQUESTS = 5;
     private int numOfRequests;
+
+    private String symmetricAlgorithm;
+    private String hashingAlgorithm;
 
 
     /**
@@ -39,8 +41,21 @@ public class ClientHandler extends Thread {
      */
     public ClientHandler(Socket client) throws Exception {
         this.client = client;
+        this.symmetricAlgorithm = "";
+        this.hashingAlgorithm = "";
         in = new ObjectInputStream(client.getInputStream());
         out = new ObjectOutputStream(client.getOutputStream());
+
+        // Get the encryption symmetric algorithm from the client
+        this.symmetricAlgorithm = in.readUTF();
+        System.out.println("Received selected algorithm: " + this.symmetricAlgorithm);
+        //verifyAlgorithmServerSupport(this.symmetricAlgorithm);
+
+        // Get encryption hashing algorithm from the client
+        this.hashingAlgorithm = in.readUTF();
+        System.out.println("Received selected algorithm: " + this.hashingAlgorithm.replace("Hmac", ""));
+        //verifyAlgorithmServerSupport(this.hashingAlgorithm);
+
         isConnected = true; // TODO: Check if this is necessary or if it should be controlled
         KeyPair keyPair = Encryption.generateKeyPair();
         this.numOfRequests = 0;
@@ -115,11 +130,11 @@ public class ClientHandler extends Thread {
     }
 
     @Override
-    public void run() {
-        super.run();
+    public void run ( ) {
+        super.run ( );
         try {
             while (isConnected) {
-                if (this.numOfRequests < maxNumOfRequests) {
+                if (this.numOfRequests < MAX_NUM_OF_REQUESTS) {
                     System.out.println("Processing Request...");
                     byte[] content = receiveMessage();
                     if(content.length == 0) {
@@ -132,6 +147,17 @@ public class ClientHandler extends Thread {
                     System.out.println("****************************************");
                     System.out.println("***      Renewing the Handshake      ***");
                     System.out.println("****************************************");
+
+                    // Get the encryption symmetric algorithm from the client
+                    this.symmetricAlgorithm = in.readUTF();
+                    System.out.println("Received selected algorithm: " + this.symmetricAlgorithm);
+                    //verifyAlgorithmServerSupport(this.symmetricAlgorithm);
+
+                    // Get encryption hashing algorithm from the client
+                    this.hashingAlgorithm = in.readUTF();
+                    System.out.println("Received selected algorithm: " + this.hashingAlgorithm.replace("Hmac", ""));
+                    //verifyAlgorithmServerSupport(this.hashingAlgorithm);
+
                     KeyPair keyPair = Encryption.generateKeyPair();
                     this.privateRSAKey = keyPair.getPrivate();
                     this.publicRSAKey = keyPair.getPublic();
@@ -193,9 +219,10 @@ public class ClientHandler extends Thread {
 
     private byte[] decryptMessage(Message messageObj) throws Exception {
         // Extracts and decrypt the message
-        byte[] decryptedMessage = Encryption.decryptMessage(messageObj.getMessage(), sharedSecret.toByteArray());
+        byte[] decryptedMessage = Encryption.decryptMessage(messageObj.getMessage(), sharedSecret.toByteArray(),
+                symmetricAlgorithm);
         // Computes the digest of the received message
-        byte[] computedDigest = Integrity.generateDigest(decryptedMessage, sharedSecret.toByteArray());
+        byte[] computedDigest = Integrity.generateDigest(decryptedMessage, sharedSecret.toByteArray(),hashingAlgorithm);
         // Verifies the integrity of the message
         if (!Integrity.verifyDigest(messageObj.getSignature(), computedDigest)) {
             throw new RuntimeException("The integrity of the message is not verified");
@@ -213,12 +240,60 @@ public class ClientHandler extends Thread {
         System.out.println("Hello " + this.clientName);
         this.numOfRequests++;
         //Sending the file to the client, before sending check if the file is too big
-        byte[] encryptedMessage = Encryption.encryptMessage(content, sharedSecret.toByteArray());
-        byte[] digest = Integrity.generateDigest(content, sharedSecret.toByteArray());
+        byte[] encryptedMessage = Encryption.encryptMessage(content, sharedSecret.toByteArray(), symmetricAlgorithm);
+        byte[] digest = Integrity.generateDigest(content, sharedSecret.toByteArray(), hashingAlgorithm);
         Message response = new Message(encryptedMessage, digest);
         out.writeObject(response);
         out.flush();
     }
+
+    /**
+     * Receive the algorithms selected by the client, and verify if the server support them
+     */
+    private void verifyAlgorithmServerSupport(String algorithm) throws IOException {
+        String algorithmsNameGrouped = "AESDES3DESede";
+        algorithm = in.readUTF();
+        System.out.println("Received selected algorithm: " + algorithm);
+        out.writeBoolean((true ? true : false));
+//
+//        String algorithmsNameGrouped = "AESDES3DESede";
+//        try {
+//            algorithm = in.readUTF();
+//        } catch (IOException e) {
+//            throw new RuntimeException(e);
+//        } finally{
+//            System.out.println("Received selected algorithm: " + algorithm);
+//            Boolean algorithmExists = (algorithmsNameGrouped.contains(algorithm) ? true : false);
+//            try {
+//                out.writeBoolean((algorithmExists ? true : false));
+//            } catch (IOException e) {
+//                throw new RuntimeException(e);
+//            }
+//        }
+
+
+
+    }
+
+
+
+
+    //algorithmValidation(this.symmetricAlgorithm);
+
+    //algorithmValidation(this.symmetricAlgorithm);
+
+    /**
+     * Validation of algorithms supported by the server
+     */
+//    public void algorithmValidation(String algorithm) {
+//        if (!algorithm){
+//            out.writeUTF("NOK! Algorithm not supported by the server.\nSelect a valid one.");
+//        } else {
+//            out.writeUTF("OK! Algorithm supported.");
+//        }
+//
+//    }
+//    "Received selected algorithm: " + this.symmetricAlgorithm + "!"
 
 
     /**

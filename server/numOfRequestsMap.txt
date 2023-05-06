@@ -1,0 +1,4 @@
+Joao:2
+joe:0
+Carla:0
+Ana:4
