@@ -1,7 +1,5 @@
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -10,11 +8,10 @@ import java.io.StreamCorruptedException;
 import java.math.BigInteger;
 import java.net.Socket;
 import java.nio.file.Files;
-import java.util.Scanner;
 import java.security.KeyPair;
-import java.util.Arrays;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.util.Scanner;
 
 /**
  * This class represents the client. The client sends the messages to the server by means of a socket. The use of Object
@@ -26,12 +23,9 @@ public class Client {
     private static final String HOST = "0.0.0.0";
     private final Socket client;
     private int numOfRequests;
-    private final int MAX_NUM_OF_REQUESTS = 5;
-    private File newConfigFile;
     private final ObjectInputStream in;
     private final ObjectOutputStream out;
     private boolean isConnected;
-    private final String userDir;
     private PublicKey publicRSAKey;
     private PrivateKey privateRSAKey;
     private PublicKey serverPublicRSAKey;
@@ -42,7 +36,7 @@ public class Client {
     public static Scanner input = new Scanner(System.in);
 
 
-    private boolean clientExists;
+    private final boolean clientExists;
 
     private final File userDirectory;
 
@@ -75,7 +69,7 @@ public class Client {
             clientExists = true;
         }
         // Create a temporary directory for putting the request files
-        userDir = Files.createTempDirectory("fileServer").toFile().getAbsolutePath();
+        String userDir = Files.createTempDirectory("fileServer").toFile().getAbsolutePath();
         System.out.println("Temporary directory path " + userDir);
 
         handshake();
@@ -92,10 +86,6 @@ public class Client {
 
     public Socket getClient() {
         return client;
-    }
-
-    public int getNumOfRequests() {
-        return numOfRequests;
     }
 
     public PublicKey getPublicRSAKey() {
@@ -229,11 +219,12 @@ public class Client {
      * Executes the client. It reads the file from the console and sends it to the server. It waits for the response and
      * writes the file to the temporary directory.
      */
-    public void execute() throws Exception {
+    public void execute() {
         Scanner usrInput = new Scanner(System.in);
         try {
             String clientName = "NAME" + " : " + this.name;
             greeting(clientName);
+            int MAX_NUM_OF_REQUESTS = 5;
             if (clientExists) {
                 System.out.println("*** Welcome again, " + this.name + "! ***");
                 System.out.println("Number of Requests Remaining: " + (MAX_NUM_OF_REQUESTS - this.numOfRequests));
@@ -282,7 +273,7 @@ public class Client {
     /**
      * Renews the Handshake after 5 requests to the server
      */
-    private void renewHandshake() throws Exception {
+    void renewHandshake() throws Exception {
 
         this.symmetricAlgorithm = menuSymmetricAlgorithm();
         out.writeUTF(this.symmetricAlgorithm);
@@ -413,25 +404,25 @@ public class Client {
             option = input.nextInt();
 
             switch (option) {
-                case 1:
+                case 1 -> {
                     this.symmetricAlgorithm = "AES";
                     //symmetricKey = 256;
                     System.out.println("Implementing AES, key size 256 ...");
-                    break;
-                case 2:
+                }
+                case 2 -> {
                     this.symmetricAlgorithm = "DES";
                     //symmetricKey = 64;
                     System.out.println("Implementing DES, key size 56(64) ...");
-                    break;
-                case 3:
+                }
+                case 3 -> {
                     this.symmetricAlgorithm = "DESede";
                     //symmetricKey = 192;
                     System.out.println("Implementing 3DES, key size 168 ...");
-                    break;
-                case 4:
+                }
+                case 4 -> {
                     this.symmetricAlgorithm = "RC4";
                     System.out.println("Trying to implement RC4 ...");
-                    break;
+                }
             }
         } while (option < 1 && option > 4);
 
@@ -453,33 +444,25 @@ public class Client {
             option = input.nextInt();
 
             switch (option) {
-                case 1:
+                case 1 -> {
                     this.hashingAlgorithm = "HmacMD5";
                     System.out.println("Implementing MD5, key size 128...");
-                    break;
-                case 2:
+                }
+                case 2 -> {
                     this.hashingAlgorithm = "HmacSHA256";
                     System.out.println("Implementing SHA-3, key size 256...");
-                    break;
-                case 3:
+                }
+                case 3 -> {
                     this.hashingAlgorithm = "HmacSHA512";
                     System.out.println("Implementing SHA-3, key size 512...");
-                    break;
-                case 4:
+                }
+                case 4 -> {
                     this.hashingAlgorithm = "Blake2";
                     System.out.println("Trying to implement Blake2...");
-                    break;
+                }
             }
         } while (option < 1 && option > 4);
         return this.hashingAlgorithm;
-    }
-
-    public String getSymmetricAlgorithm() {
-        return symmetricAlgorithm;
-    }
-
-    public String getHashingAlgorithm() {
-        return hashingAlgorithm;
     }
 
     /**

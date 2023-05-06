@@ -1,4 +1,9 @@
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.math.BigInteger;
 import java.net.Socket;
 import java.security.KeyPair;
@@ -25,7 +30,6 @@ public class ClientHandler extends Thread {
 
     private String clientName;
 
-    private final int MAX_NUM_OF_REQUESTS = 5;
     private int numOfRequests;
 
     private String symmetricAlgorithm;
@@ -145,6 +149,7 @@ public class ClientHandler extends Thread {
         super.run ( );
         try {
             while (isConnected) {
+                int MAX_NUM_OF_REQUESTS = 5;
                 if (this.numOfRequests < MAX_NUM_OF_REQUESTS) {
                     System.out.println("Processing Request...");
                     byte[] content = receiveMessage();

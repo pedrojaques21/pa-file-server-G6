@@ -1,4 +1,3 @@
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Scanner;
 
@@ -7,7 +6,7 @@ public class MainServer {
     public static final String NREQUESTSMAP_PATH = "server/numOfRequestsMap.txt";
     public static HashMap<String, Integer> numOfRequestsMap = new HashMap<>();
 
-    private static Scanner scanner = new Scanner(System.in);
+    private static final Scanner scanner = new Scanner(System.in);
 
     public static void main ( String[] args ) throws Exception {
 
@@ -20,7 +19,7 @@ public class MainServer {
         Thread serverThread = new Thread ( server );
         serverThread.start ( );
 
-        String stop = "";
+        String stop;
         do {
             stop = scanner.nextLine();
         } while (!stop.equals("s"));
