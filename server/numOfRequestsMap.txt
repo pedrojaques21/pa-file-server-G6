@@ -1,3 +1,5 @@
-Joao:2
+Joao:3
 James:0
+Josh:1
 Jack:4
+Matilde:4

@@ -4,9 +4,7 @@ import java.net.Socket;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Scanner;
+
 
 /**
  * This class represents the client handler. It handles the communication with the client. It reads the file from the
@@ -52,16 +50,18 @@ public class ClientHandler extends Thread {
 
         // Get the encryption symmetric algorithm from the client
         this.symmetricAlgorithm = in.readUTF();
-        System.out.println("Received selected algorithm: " + this.symmetricAlgorithm);
         isSupported = verifyAlgorithmServerSupport(this.symmetricAlgorithm);
 
         // Get encryption hashing algorithm from the client
         this.hashingAlgorithm = in.readUTF();
-        System.out.println("Received selected algorithm: " + this.hashingAlgorithm.replace("Hmac", ""));
         hashIsSupported = verifyHashAlgorithmServerSupport(this.hashingAlgorithm);
-        if(isSupported|hashIsSupported){
+
+        if(!isSupported | !hashIsSupported){
             sendErrorMessage();
+        }else{
+            sendSuccessMessage();
         }
+
         isConnected = true;
         KeyPair keyPair = Encryption.generateKeyPair();
         this.numOfRequests = 0;
@@ -74,6 +74,11 @@ public class ClientHandler extends Thread {
             outputStream.write(publicRSAKey.getEncoded());
         }
 
+    }
+
+    private void sendSuccessMessage() throws IOException {
+        out.writeUTF("The selected Algorithm is supported by this server, enjoy!");
+        out.flush();
     }
 
     /**
@@ -135,9 +140,6 @@ public class ClientHandler extends Thread {
         return sharedSecret;
     }
 
-
-
-
     @Override
     public void run ( ) {
         super.run ( );
@@ -152,23 +154,25 @@ public class ClientHandler extends Thread {
                         sendFile(content);
                     }
                 } else {
-                    this.numOfRequests = 0;
-                    System.out.println("****************************************");
-                    System.out.println("***      Renewing the Handshake      ***");
-                    System.out.println("****************************************");
-
                     // Get the encryption symmetric algorithm from the client
                     this.symmetricAlgorithm = in.readUTF();
-                    System.out.println("Received selected algorithm: " + this.symmetricAlgorithm);
                     isSupported = verifyAlgorithmServerSupport(this.symmetricAlgorithm);
 
                     // Get encryption hashing algorithm from the client
                     this.hashingAlgorithm = in.readUTF();
-                    System.out.println("Received selected algorithm: " + this.hashingAlgorithm.replace("Hmac", ""));
                     hashIsSupported = verifyHashAlgorithmServerSupport(this.hashingAlgorithm);
-                    if(isSupported|hashIsSupported){
+
+                    if(!isSupported | !hashIsSupported){
                         sendErrorMessage();
                     }
+
+                    this.numOfRequests = 0;
+                    MainServer.numOfRequestsMap = FileHandler.readHashMapFromFile(MainServer.NREQUESTSMAP_PATH);
+                    MainServer.numOfRequestsMap.put(this.clientName, this.numOfRequests);
+                    System.out.println("****************************************");
+                    System.out.println("***      Renewing the Handshake      ***");
+                    System.out.println("****************************************");
+
                     KeyPair keyPair = Encryption.generateKeyPair();
                     this.privateRSAKey = keyPair.getPrivate();
                     this.publicRSAKey = keyPair.getPublic();
@@ -194,8 +198,6 @@ public class ClientHandler extends Thread {
         // Reads the message to extract the path of the file
         String request = new String(decryptedMessage);
         if(!request.startsWith("NAME")) {
-            MainServer.numOfRequestsMap = FileHandler.readHashMapFromFile(MainServer.NREQUESTSMAP_PATH);
-            MainServer.numOfRequestsMap.put(this.clientName, this.numOfRequests);
             // Reads the file and sends it to the client
             return FileHandler.readFile(RequestUtils.getAbsoluteFilePath(request));
         }else{
@@ -240,6 +242,9 @@ public class ClientHandler extends Thread {
      */
     private void sendFile(byte[] content) throws Exception {
         this.numOfRequests++;
+        MainServer.numOfRequestsMap = FileHandler.readHashMapFromFile(MainServer.NREQUESTSMAP_PATH);
+        MainServer.numOfRequestsMap.put(this.clientName, this.numOfRequests);
+        FileHandler.saveHashMapToTextFile(MainServer.numOfRequestsMap, MainServer.NREQUESTSMAP_PATH);
         //Sending the file to the client, before sending check if the file is too big
         byte[] encryptedMessage = Encryption.encryptMessage(content, sharedSecret.toByteArray(), symmetricAlgorithm);
         byte[] digest = Integrity.generateDigest(content, sharedSecret.toByteArray(), hashingAlgorithm);
@@ -251,7 +256,6 @@ public class ClientHandler extends Thread {
     private void sendErrorMessage() throws IOException {
         out.writeUTF("The selected Algorithm is not supported by this server!");
         out.flush();
-        isConnected = false;
     }
 
     /**
@@ -304,21 +308,14 @@ public class ClientHandler extends Thread {
     /**
      * Closes the connection by closing the socket and the streams.
      */
-
     private void closeConnection() {
         try {
-            if (out != null) {
-                out.close();
-            }
-            if (in != null) {
-                in.close();
-            }
-            if (this.client != null && !this.client.isClosed()) {
-                this.client.close();
-            }
             isConnected = false;
+            this.out.close();
+            this.in.close();
+            this.client.close();
         } catch (IOException e) {
-            // Handle the exception or log an error if needed
+            throw new RuntimeException(e);
         }
     }
 

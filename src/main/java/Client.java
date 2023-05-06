@@ -22,7 +22,7 @@ public class Client {
     private File newConfigFile;
     private final ObjectInputStream in;
     private final ObjectOutputStream out;
-    private final boolean isConnected;
+    private boolean isConnected;
     private final String userDir;
     private PublicKey publicRSAKey;
     private PrivateKey privateRSAKey;
@@ -31,7 +31,7 @@ public class Client {
 
     private String symmetricAlgorithm;
     private String hashingAlgorithm;
-    public  static Scanner input = new Scanner(System.in);
+    public static Scanner input = new Scanner(System.in);
 
 
     private boolean clientExists;
@@ -66,15 +66,16 @@ public class Client {
             this.numOfRequests = MainServer.numOfRequestsMap.get(this.name);
             clientExists = true;
         }
+        // Create a temporary directory for putting the request files
+        userDir = Files.createTempDirectory("fileServer").toFile().getAbsolutePath();
+        System.out.println("Temporary directory path " + userDir);
+
         handshake();
+
         File filesDirectory = new File(userDirectory.getAbsolutePath() + "/files");
         if (!filesDirectory.exists()) {
             filesDirectory.mkdirs();
         }
-
-        // Create a temporary directory for putting the request files
-        userDir = Files.createTempDirectory("fileServer").toFile().getAbsolutePath();
-        System.out.println("Temporary directory path " + userDir);
     }
 
     public String getName() {
@@ -114,15 +115,21 @@ public class Client {
 
         this.symmetricAlgorithm = menuSymmetricAlgorithm();
         out.writeUTF(this.symmetricAlgorithm);
+        out.flush();
         System.out.println("Sent to server the selected algorithm: " + this.symmetricAlgorithm);
 
         this.hashingAlgorithm = menuHashingAlgorithm();
         out.writeUTF(this.hashingAlgorithm);
+        out.flush();
         System.out.println("Sent to server the selected algorithm: " + this.hashingAlgorithm);
 
-
-
-        System.out.println("");
+        String response = in.readUTF();
+        if(response.equals("The selected Algorithm is not supported by this server!")){
+            System.out.println("*** The selected Algorithm is not supported by this server! ***\n\t\t*** You are now going to be disconnected! ***");
+            closeConnection();
+        }else{
+            System.out.println("*** " + response + " ***");
+        }
 
         //generate keys
         KeyPair keyPair = Encryption.generateKeyPair();
@@ -221,15 +228,7 @@ public class Client {
             greeting(clientName);
             if (clientExists) {
                 System.out.println("*** Welcome again, " + this.name + "! ***");
-                System.out.println("Number of Requests Remaining: " + numOfRequests + 1);
-
-                String filePath = userDirectory.getAbsolutePath() + File.separator + "client.config";
-                newConfigFile = new File(filePath);
-                int num = 0;
-                Scanner scanner = new Scanner(newConfigFile);
-                num = Integer.parseInt(scanner.nextLine());
-                this.numOfRequests = num;
-                scanner.close();
+                System.out.println("Number of Requests Remaining: " + (MAX_NUM_OF_REQUESTS - this.numOfRequests));
             } else {
                 System.out.println("*** Welcome, " + this.name + "! ***\n You are now able to enjoy file storage.");
 
@@ -243,10 +242,6 @@ public class Client {
                     String request = usrInput.nextLine();
                     // Request the file
                     sendMessage(request);
-                    // update value of the file
-                    BufferedWriter writer = new BufferedWriter(new FileWriter(newConfigFile));
-                    writer.write(Integer.toString(this.numOfRequests));
-                    writer.close();
                     // Waits for the response
                     processResponse(RequestUtils.getFileNameFromRequest(request), in);
 
@@ -255,18 +250,14 @@ public class Client {
                     System.out.println("****************************************");
                     System.out.println("***      Renewing the Handshake      ***");
                     System.out.println("****************************************\n");
-                    this.numOfRequests = 0;
                     renewHandshake();
+                    this.numOfRequests = 0;
                     System.out.println("****************************************");
                     System.out.println("***    Write the path of the file    ***");
                     System.out.println("****************************************");
                     String request = usrInput.nextLine();
                     // Request the file
                     sendMessage(request);
-                    // update value of the file
-                    BufferedWriter writer = new BufferedWriter(new FileWriter(newConfigFile));
-                    writer.write(Integer.toString(this.numOfRequests));
-                    writer.close();
                     //waits for the server response
                     processResponse(RequestUtils.getFileNameFromRequest(request), in);
                 }
@@ -287,14 +278,22 @@ public class Client {
 
         this.symmetricAlgorithm = menuSymmetricAlgorithm();
         out.writeUTF(this.symmetricAlgorithm);
+        out.flush();
         System.out.println("Sent to server the selected algorithm: " + this.symmetricAlgorithm);
 
         this.hashingAlgorithm = menuHashingAlgorithm();
         out.writeUTF(this.hashingAlgorithm);
+        out.flush();
         System.out.println("Sent to server the selected algorithm: " + this.hashingAlgorithm);
 
-        String serverResponse = in.readUTF(); // Wait for the server response
-        System.out.println("Server response: " + serverResponse);
+        String response = in.readUTF();
+        if(response.equals("The selected Algorithm is not supported by this server!")){
+            System.out.println("*** The selected Algorithm is not supported by this server! ***\n\t\t*** You are now going to be disconnected! ***");
+            closeConnection();
+        }else{
+            System.out.println("*** " + response + " ***");
+        }
+
         //generate keys
         KeyPair keyPair = Encryption.generateKeyPair();
         //set client private key
@@ -331,8 +330,14 @@ public class Client {
             }
             //Writes the decrypted message to the console
             System.out.println("Decrypted Message: " + new String(decryptedMessage) + "\n");
-            // Writes the decrypted message to the file
-            FileHandler.writeFile(this.name + "/files/" + fileName, new String(decryptedMessage).getBytes());
+            // Check if the decrypted message starts with "ERROR"
+            if (new String(decryptedMessage).startsWith("ERROR")) {
+                // Print an error message
+                System.out.println("*** Error: the file you requested does not exist! Your number of allowed requests now is: " + (this.numOfRequests - 1) + " *** \n *** Choose another one! ***");
+            } else {
+                // Writes the decrypted message to the file
+                FileHandler.writeFile(this.name + "/files/" + fileName, new String(decryptedMessage).getBytes());
+            }
             return decryptedMessage;//Returns for testing purposes
         } catch (StreamCorruptedException e) {
             e.printStackTrace();
@@ -385,15 +390,16 @@ public class Client {
 
     /**
      * Selecting alternative options of symetric algorythm
+     *
      * @return
      */
     public String menuSymmetricAlgorithm() {
         int option;
         do {
-            System.out.println("**********************************");
-            System.out.println("* Encryption Symmetric Algorithm *");
-            System.out.println("* (1)-AES256; (2)-DES; (3)-3DES  *");
-            System.out.println("**********************************");
+            System.out.println("*********************************************************");
+            System.out.println("*           Encryption Symmetric Algorithm              *");
+            System.out.println("* (1)-AES256; (2)-DES; (3)-3DES; (4)-RC4(Not supported) *");
+            System.out.println("*********************************************************");
             option = input.nextInt();
 
             switch (option) {
@@ -412,23 +418,28 @@ public class Client {
                     //symmetricKey = 192;
                     System.out.println("Implementing 3DES, key size 168 ...");
                     break;
+                case 4:
+                    this.symmetricAlgorithm = "RC4";
+                    System.out.println("Trying to implement RC4 ...");
+                    break;
             }
-        } while (option < 1 && option > 3);
+        } while (option < 1 && option > 4);
 
         return this.symmetricAlgorithm;
     }
 
     /**
      * Selecting alternative options of hashing algorythm
+     *
      * @return
      */
     public String menuHashingAlgorithm() {
         int option;
         do {
-            System.out.println("***********************************");
-            System.out.println("*        Hashing Algorithm        *");
-            System.out.println("* (1)-MD5; (2)-SHA256; (3)-SHA512 *");
-            System.out.println("***********************************");
+            System.out.println("*************************************************************");
+            System.out.println("*                    Hashing Algorithm                      *");
+            System.out.println("* (1)-MD5; (2)-SHA256; (3)-SHA512; (4)Blake2(Not Supported) *");
+            System.out.println("*************************************************************");
             option = input.nextInt();
 
             switch (option) {
@@ -444,8 +455,12 @@ public class Client {
                     this.hashingAlgorithm = "HmacSHA512";
                     System.out.println("Implementing SHA-3, key size 512...");
                     break;
+                case 4:
+                    this.hashingAlgorithm = "Blake2";
+                    System.out.println("Trying to implement Blake2...");
+                    break;
             }
-        } while (option < 1 && option > 3);
+        } while (option < 1 && option > 4);
         return this.hashingAlgorithm;
     }
 
@@ -462,6 +477,7 @@ public class Client {
      */
     private void closeConnection() {
         try {
+            this.isConnected = false;
             client.close();
             out.close();
             in.close();
