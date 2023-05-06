@@ -333,7 +333,7 @@ public class Client {
             // Check if the decrypted message starts with "ERROR"
             if (new String(decryptedMessage).startsWith("ERROR")) {
                 // Print an error message
-                System.out.println("*** Error: the file you requested does not exist! Your number of allowed requests now is: " + (this.numOfRequests - 1) + " *** \n *** Choose another one! ***");
+                System.out.println("*** Error: the file you requested does not exist! Your number of allowed requests decreased *** \n *** Choose another one! ***");
             } else {
                 // Writes the decrypted message to the file
                 FileHandler.writeFile(this.name + "/files/" + fileName, new String(decryptedMessage).getBytes());
@@ -481,6 +481,7 @@ public class Client {
             client.close();
             out.close();
             in.close();
+            System.exit(1);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
