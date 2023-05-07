@@ -260,6 +260,7 @@ public class ClientHandler extends Thread {
         out.writeUTF("The selected Algorithm is not supported by this server!");
         System.out.println("The selected Algorithm is not supported by this server!");
         out.flush();
+        closeConnection();
     }
 
     /**
@@ -314,10 +315,10 @@ public class ClientHandler extends Thread {
      */
     private void closeConnection() {
         try {
-            isConnected = false;
-            this.out.close();
-            this.in.close();
-            this.client.close();
+            client.close();
+            out.close();
+            in.close();
+
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
