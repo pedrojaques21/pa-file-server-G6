@@ -287,6 +287,7 @@ public class Client {
         System.out.println("Sent to server the selected algorithm: " + this.hashingAlgorithm);
 
         String response = in.readUTF();
+        System.out.println("Passou?");
         if(response.equals("The selected Algorithm is not supported by this server!")){
             System.out.println("*** The selected Algorithm is not supported by this server! ***\n\t\t*** You are now going to be disconnected! ***");
             closeConnection();

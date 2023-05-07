@@ -78,6 +78,7 @@ public class ClientHandler extends Thread {
 
     private void sendSuccessMessage() throws IOException {
         out.writeUTF("The selected Algorithm is supported by this server, enjoy!");
+        System.out.println("The selected Algorithm is supported by this server, enjoy!");
         out.flush();
     }
 
@@ -164,6 +165,8 @@ public class ClientHandler extends Thread {
 
                     if(!isSupported | !hashIsSupported){
                         sendErrorMessage();
+                    }else{
+                        sendSuccessMessage();
                     }
 
                     this.numOfRequests = 0;
@@ -255,6 +258,7 @@ public class ClientHandler extends Thread {
 
     private void sendErrorMessage() throws IOException {
         out.writeUTF("The selected Algorithm is not supported by this server!");
+        System.out.println("The selected Algorithm is not supported by this server!");
         out.flush();
     }
 
