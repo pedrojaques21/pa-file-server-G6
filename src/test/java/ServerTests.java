@@ -1,21 +1,21 @@
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
-import javax.management.DescriptorKey;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.math.BigInteger;
 import java.net.Socket;
-import java.util.Arrays;
 import java.util.Scanner;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 public class ServerTests {
 
     private Client client;
     private static Server server;
-
     private static Thread serverThread;
 
 
@@ -26,8 +26,6 @@ public class ServerTests {
         serverThread.start ( );
     }
     @BeforeEach
-    public void setUp() throws Exception{
-        client = new Client(8000,"testClient");
     public void setUp() throws Exception {
         client = new Client(8000, "TestingClient", "AES", "HmacSHA256");
     }
@@ -41,26 +39,23 @@ public class ServerTests {
     @Test
     @DisplayName("Check if user is created correctly")
     public void createClient() {
-        String name = "testClient";
-        //Client client = new Client(8000, name);
-    public void createClient() {
         String name = "TestingClient";
         String clientName = client.getName();
         Socket clientSocket = client.getClient();
-        assertAll(
+        Assertions.assertAll(
                 () -> assertEquals(name, clientName),
-                () -> assertTrue(clientSocket.isBound())
+                () -> Assertions.assertTrue(clientSocket.isBound())
         );
     }
 
     @Test
     @DisplayName("Check if keys from handshake are valid")
     public void testHandshake() {
-        assertAll(
-                () -> assertNotNull(client.getPublicRSAKey()),
-                () -> assertNotNull(client.getPrivateRSAKey()),
-                () -> assertNotNull(client.getServerPublicRSAKey()),
-                () -> assertNotNull(client.getSharedSecret()),
+        Assertions.assertAll(
+                () -> Assertions.assertNotNull(client.getPublicRSAKey()),
+                () -> Assertions.assertNotNull(client.getPrivateRSAKey()),
+                () -> Assertions.assertNotNull(client.getServerPublicRSAKey()),
+                () -> Assertions.assertNotNull(client.getSharedSecret()),
                 () -> assertEquals(String.valueOf(client.getSharedSecret()),String.valueOf(server.getClientHandlerSharedSecret()))
         );
     }
@@ -117,8 +112,8 @@ public class ServerTests {
 
     @Test
     @DisplayName("Checking if changing the Mac key returns an error")
-    public void changingHashKey() throws Exception{
-        assertThrows(javax.crypto.BadPaddingException.class, () -> {
+    public void changingHashKey() {
+        Assertions.assertThrows(javax.crypto.BadPaddingException.class, () -> {
             String request = "GET : hello.txt";
             client.sendMessage(request);
             Message response = (Message) client.getIn().readObject();
@@ -144,7 +139,7 @@ public class ServerTests {
         client1.sendMessage(requestFile);
         Client client2 = new Client(8000, "Jared", "AES", "HmacSHA256");
         client2.sendMessage(requestFile);
-        assertAll(
+        Assertions.assertAll(
                 () -> assertNotEquals(client.getSharedSecret(), client1.getSharedSecret()),
                 () -> assertNotEquals(client.getSharedSecret(), client2.getSharedSecret()),
                 () -> assertNotEquals(client1.getSharedSecret(), client2.getSharedSecret())
@@ -162,9 +157,9 @@ public class ServerTests {
         byte[] message2 = client1.processResponse(requestFile1, client1.getIn());
         String stringMessage1 = new String(message1);
         String stringMessage2 = new String(message2);
-        assertAll(
-                () -> assertNotNull(stringMessage1),
-                () -> assertNotNull(stringMessage2),
+        Assertions.assertAll(
+                () -> Assertions.assertNotNull(stringMessage1),
+                () -> Assertions.assertNotNull(stringMessage2),
                 () -> assertEquals(stringMessage1, stringMessage2)
         );
     }
@@ -181,9 +176,9 @@ public class ServerTests {
         byte[] message2 = client1.processResponse(requestFile2, client1.getIn());
         String stringMessage1 = new String(message1);
         String stringMessage2 = new String(message2);
-        assertAll(
-                () -> assertNotNull(stringMessage1),
-                () -> assertNotNull(stringMessage2),
+        Assertions.assertAll(
+                () -> Assertions.assertNotNull(stringMessage1),
+                () -> Assertions.assertNotNull(stringMessage2),
                 () -> assertNotEquals(stringMessage1, stringMessage2)
         );
     }
@@ -206,7 +201,7 @@ public class ServerTests {
         client.processResponse(request, client.getIn());
         client.renewHandshake("AES", "HmacSHA256");
         String shareSecretAfterRenewHandShake = String.valueOf(client.getSharedSecret());
-        assertAll(
+        Assertions.assertAll(
                 () -> assertNotEquals(shareSecretAfterRenewHandShake, sharedSecretBeforeRenewHandShake),
                 () -> assertEquals(firstAlgorithmUsed, client.getSymmetricAlgorithm())
         );
@@ -231,7 +226,7 @@ public class ServerTests {
         client.processResponse(request, client.getIn());
         client.renewHandshake("DES", "HmacSHA256");
         String shareSecretAfterRenewHandShake = String.valueOf(client.getSharedSecret());
-        assertAll(
+        Assertions.assertAll(
                 () -> assertNotEquals(shareSecretAfterRenewHandShake, sharedSecretBeforeRenewHandShake),
                 () -> assertNotEquals(firstAlgorithmUsed, client.getSymmetricAlgorithm())
         );
@@ -255,7 +250,7 @@ public class ServerTests {
         client.processResponse(request, client.getIn());
         client.renewHandshake("AES", "HmacSHA512");
         String shareSecretAfterRenewHandShake = String.valueOf(client.getSharedSecret());
-        assertAll(
+        Assertions.assertAll(
                 () -> assertNotEquals(shareSecretAfterRenewHandShake, sharedSecretBeforeRenewHandShake),
                 () -> assertNotEquals(firstAlgorithmUsed, client.getHashingAlgorithm())
         );
@@ -282,7 +277,7 @@ public class ServerTests {
     @Test
     @DisplayName("Check if choosing non suppoted algorithm returns error")
     public void nonSupportedAlgorithm() {
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+        IllegalArgumentException exception = Assertions.assertThrows(IllegalArgumentException.class, () -> {
             Client testClient = new Client(8000,"Joe","RC4","Blake2");
             String response = testClient.getIn().readUTF();
             String errorMessage = "The selected Algorithm is not supported by this server!";
@@ -307,8 +302,8 @@ public class ServerTests {
 
     @Test
     @DisplayName("Check if user is notified when asking for a file using a wrong format")
-    public void wrongFormatFile() throws Exception {
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+    public void wrongFormatFile() {
+        IllegalArgumentException exception = Assertions.assertThrows(IllegalArgumentException.class, () -> {
             client.sendMessage("GET: fileWrongFormat");
             client.processResponse(RequestUtils.getFileNameFromRequest("GET: fileWrongFormat"), client.getIn());
         });

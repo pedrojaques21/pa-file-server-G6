@@ -1,11 +1,12 @@
 import javax.crypto.Cipher;
-import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.ByteBuffer;
 import java.security.Key;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.SecureRandom;
+import java.util.Arrays;
 
 public class Encryption {
 
@@ -70,12 +71,15 @@ public class Encryption {
 
     /**
      * Encrypts a text using AES in CBC (Cipher Block Chaining) mode.
-     * The initializatiom vector is created with a random value with the same length of the block size,
+     * The initialization vector is created with a random value with the same length of the block size,
+     *
      * @param message   the message to be encrypted
      * @param secretKey the secret key used to encrypt the message
      * @param algorithm AES, DES or 3DES
-     * @return          the encrypted message as an array of bytes
-     * @throws Exception
+     *
+     * @return the encrypted message as an array of bytes
+     *
+     * @throws Exception when the encryption fails
      */
     public static byte[] encryptMessage(byte[] message, byte[] secretKey, String algorithm) throws Exception {
         byte[] secretKeyPadded = Arrays.copyOf(secretKey, keySize(algorithm) / 8);
@@ -108,18 +112,15 @@ public class Encryption {
 //    }
 
     /**
-     * @param message   the message to be decrypted with AES256 Algorithm
-     * @param secretKey the secret key used to decrypt the message
+     * Decrypts a text using AES in CBC (Cipher Block Chaining) mode.
      *
-     * @return the decrypted message as an array of bytes
-     *
-     * @throws Exception when the encryption fails
-     * Dencrypts a text using AES in CBC (Cipher Block Chaining) mode.
      * @param Message   the message to be decrypted
      * @param secretKey secretKey the secret key used to decrypt the message
      * @param algorithm AES, DES or 3DES
-     * @return          the decrypted message as an array of bytes
-     * @throws Exception
+     *
+     * @return the decrypted message as an array of bytes
+     *
+     * @throws Exception when the decryption fails
      */
     public static byte[] decryptMessage(byte[] Message, byte[] secretKey, String algorithm) throws Exception {
         byte[] secretKeyPadded = ByteBuffer.allocate(keySize(algorithm) / 8).put(secretKey).array();
@@ -132,7 +133,13 @@ public class Encryption {
     }
 
 
-    // KeySize assigned for each algorithm
+    /**
+     * Returns the key size in bits for the specified algorithm
+     *
+     * @param algorithm the algorithm to be used
+     *
+     * @return the key size in bits for the specified algorithm
+     */
     private static int keySize(String algorithm) {
         if (algorithm.equals("DESede")) {
             return 192;

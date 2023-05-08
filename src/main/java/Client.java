@@ -41,6 +41,10 @@ public class Client {
      * send a message.
      *
      * @param port the port to connect to
+     * @param name the name of the client
+     * @param wayToChooseSymmetric the way to choose the symmetric algorithm
+     * @param wayToChooseHashing the way to choose the hashing algorithm
+     *
      * @throws IOException when an I/O error occurs when creating the socket
      */
     public Client(int port, String name, String wayToChooseSymmetric, String wayToChooseHashing) throws Exception {
@@ -104,8 +108,19 @@ public class Client {
         return in;
     }
 
+    public String getSymmetricAlgorithm() {
+        return symmetricAlgorithm;
+    }
+
+    public String getHashingAlgorithm() {
+        return hashingAlgorithm;
+    }
+
     /**
      * Realizes the Diffie-Hellman key distribution protocol to agree on a shared private key.
+     *
+     * @param wayToChooseHashing the way to choose the hashing algorithm
+     * @param wayToChooseSymmetric the way to choose the symmetric algorithm
      *
      * @throws Exception when an I/O error occurs when closing the socket
      */
@@ -177,7 +192,9 @@ public class Client {
      * Performs the Diffie-Hellman algorithm to agree on a shared private key.
      *
      * @param serverPublicRSAKey the public key of the receiver
+     *
      * @return the shared private key
+     *
      * @throws Exception when the Diffie-Hellman algorithm fails
      */
     private BigInteger agreeOnSharedSecret(PublicKey serverPublicRSAKey) throws Exception {
@@ -198,6 +215,7 @@ public class Client {
      * key of the receiver.
      *
      * @return the public key of the sender
+     *
      * @throws Exception when the key distribution protocol fails
      */
     private PublicKey rsaKeyDistribution() throws Exception {
@@ -211,6 +229,7 @@ public class Client {
      * Sends the public key to the receiver.
      *
      * @param publicKey the public key to send
+     *
      * @throws Exception when the public key cannot be sent
      */
     private void sendPublicDHKey(byte[] publicKey) throws Exception {
@@ -230,8 +249,6 @@ public class Client {
     /**
      * Executes the client. It reads the file from the console and sends it to the server. It waits for the response and
      * writes the file to the temporary directory.
-     *
-     * @throws Exception when an error occurs during the execution of the client
      */
     public void execute() {
         Scanner usrInput = new Scanner(System.in);
@@ -342,7 +359,8 @@ public class Client {
      *
      * @param fileName the name of the file to write
      * @param in the input stream from which to read the response
-     * @throws Exception if an error occurs while reading the response or writing the file     *
+     *
+     * @throws Exception if an error occurs while reading the response or writing the file
      */
     public byte[] processResponse(String fileName, ObjectInputStream in) throws Exception {
         try {
@@ -384,6 +402,7 @@ public class Client {
      * Responsible for letting the server know the clients name
      *
      * @param name - name of the client
+     *
      * @throws Exception if an error occurs while sending the message
      */
     public void greeting(String name) throws Exception {
@@ -405,6 +424,7 @@ public class Client {
      * of the {@link Message} class.
      *
      * @param filePath the message to send
+     *
      * @throws IOException when an I/O error occurs when sending the message
      */
     public Message sendMessage(String filePath) throws Exception {
