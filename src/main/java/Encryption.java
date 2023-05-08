@@ -57,7 +57,7 @@ public class Encryption {
     // KeySize assigned for each algorithm
     private static int keySize(String algorithm) {
         if (algorithm.equals("DESede")) {
-            return 24;
+            return 192;
         } else if (algorithm.equals("DES")) {
             return 64;
         } else {    // "AES"

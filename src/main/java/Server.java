@@ -2,6 +2,7 @@ import java.io.*;
 import java.math.BigInteger;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 
 /**
  * This class represents a server that receives a message from the clients. The server is implemented as a thread. Each
@@ -39,8 +40,10 @@ public class Server implements Runnable {
                 process(client);
             }
             closeConnection();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        } catch (RuntimeException | SocketException e) {
+            run();
+        }catch (Exception e){
+            e.printStackTrace();
         }
     }
 

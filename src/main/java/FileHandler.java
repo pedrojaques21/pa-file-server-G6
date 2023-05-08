@@ -1,4 +1,5 @@
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -17,14 +18,19 @@ public class FileHandler {
      *
      * @throws IOException when an I/O error occurs when reading the file
      */
-    public static byte[] readFile ( String path ) throws IOException {
+    public static byte[] readFile(String path) throws IOException {
         try {
-            File file = new File ( path );
-            byte[] fileBytes = new byte[ ( int ) file.length ( ) ];
-            FileInputStream fileInputStream = new FileInputStream ( file );
-            fileInputStream.read ( fileBytes );
-            fileInputStream.close ( );
-            return fileBytes;
+            File file = new File(path);
+            if (file.exists()) {
+                byte[] fileBytes = new byte[(int) file.length()];
+                FileInputStream fileInputStream = new FileInputStream(file);
+                fileInputStream.read(fileBytes);
+                fileInputStream.close();
+                return fileBytes;
+            } else {
+                String helloString = "ERROR - FILE NOT FOUND";
+                return helloString.getBytes(StandardCharsets.UTF_8);
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

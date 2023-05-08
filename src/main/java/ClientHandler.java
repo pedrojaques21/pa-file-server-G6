@@ -4,8 +4,7 @@ import java.net.Socket;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.util.Arrays;
-import java.util.Scanner;
+
 
 /**
  * This class represents the client handler. It handles the communication with the client. It reads the file from the
@@ -32,6 +31,9 @@ public class ClientHandler extends Thread {
     private String symmetricAlgorithm;
     private String hashingAlgorithm;
 
+    private boolean isSupported;
+    private boolean hashIsSupported;
+
 
     /**
      * Creates a ClientHandler object by specifying the socket to communicate with the client. All the processing is
@@ -48,15 +50,19 @@ public class ClientHandler extends Thread {
 
         // Get the encryption symmetric algorithm from the client
         this.symmetricAlgorithm = in.readUTF();
-        System.out.println("Received selected algorithm: " + this.symmetricAlgorithm);
-        //verifyAlgorithmServerSupport(this.symmetricAlgorithm);
+        isSupported = verifyAlgorithmServerSupport(this.symmetricAlgorithm);
 
         // Get encryption hashing algorithm from the client
         this.hashingAlgorithm = in.readUTF();
-        System.out.println("Received selected algorithm: " + this.hashingAlgorithm.replace("Hmac", ""));
-        //verifyAlgorithmServerSupport(this.hashingAlgorithm);
+        hashIsSupported = verifyHashAlgorithmServerSupport(this.hashingAlgorithm);
 
-        isConnected = true; // TODO: Check if this is necessary or if it should be controlled
+        if(!isSupported | !hashIsSupported){
+            sendErrorMessage();
+        }else{
+            sendSuccessMessage();
+        }
+
+        isConnected = true;
         KeyPair keyPair = Encryption.generateKeyPair();
         this.numOfRequests = 0;
         this.privateRSAKey = keyPair.getPrivate();
@@ -68,6 +74,12 @@ public class ClientHandler extends Thread {
             outputStream.write(publicRSAKey.getEncoded());
         }
 
+    }
+
+    private void sendSuccessMessage() throws IOException {
+        out.writeUTF("The selected Algorithm is supported by this server, enjoy!");
+        System.out.println("The selected Algorithm is supported by this server, enjoy!");
+        out.flush();
     }
 
     /**
@@ -143,27 +155,32 @@ public class ClientHandler extends Thread {
                         sendFile(content);
                     }
                 } else {
-                    this.numOfRequests = 0;
-                    System.out.println("****************************************");
-                    System.out.println("***      Renewing the Handshake      ***");
-                    System.out.println("****************************************");
-
                     // Get the encryption symmetric algorithm from the client
                     this.symmetricAlgorithm = in.readUTF();
-                    System.out.println("Received selected algorithm: " + this.symmetricAlgorithm);
-                    //verifyAlgorithmServerSupport(this.symmetricAlgorithm);
+                    isSupported = verifyAlgorithmServerSupport(this.symmetricAlgorithm);
 
                     // Get encryption hashing algorithm from the client
                     this.hashingAlgorithm = in.readUTF();
-                    System.out.println("Received selected algorithm: " + this.hashingAlgorithm.replace("Hmac", ""));
-                    //verifyAlgorithmServerSupport(this.hashingAlgorithm);
+                    hashIsSupported = verifyHashAlgorithmServerSupport(this.hashingAlgorithm);
+
+                    if(!isSupported | !hashIsSupported){
+                        sendErrorMessage();
+                    }else{
+                        sendSuccessMessage();
+                    }
+
+                    this.numOfRequests = 0;
+                    MainServer.numOfRequestsMap = FileHandler.readHashMapFromFile(MainServer.NREQUESTSMAP_PATH);
+                    MainServer.numOfRequestsMap.put(this.clientName, this.numOfRequests);
+                    System.out.println("****************************************");
+                    System.out.println("***      Renewing the Handshake      ***");
+                    System.out.println("****************************************");
 
                     KeyPair keyPair = Encryption.generateKeyPair();
                     this.privateRSAKey = keyPair.getPrivate();
                     this.publicRSAKey = keyPair.getPublic();
                     this.senderPublicRSAKey = rsaKeyDistribution(in);
                     this.sharedSecret = agreeOnSharedSecret(senderPublicRSAKey);
-                    System.out.println("SHARED: " + Arrays.toString(sharedSecret.toByteArray()));
                     System.out.println("Processing Request...");
                     byte[] content = receiveMessage();
                     sendFile(content);
@@ -193,26 +210,16 @@ public class ClientHandler extends Thread {
             File[] directories = rootDir.listFiles(File::isDirectory);
             assert directories != null;
             this.clientName = name;
-            for (File directory : directories) {
-                if (directory.getName().equals(this.clientName)) {
-                    String filePath = directory + File.separator + "client.config";
-                    int num = 0;
-                    File file = new File(filePath);
-                    if (file.exists() && file.canRead()) {
-                        Scanner scanner = new Scanner(file);
-                        if(scanner.hasNextLine()) {
-                            num = Integer.parseInt(scanner.nextLine());
-                            this.numOfRequests = num;
-                            scanner.close();
-                        }else{
-                            this.numOfRequests = 0;
-                        }
-                    }else{
-                        System.out.println("O arquivo não existe ou não pode ser lido");
-                    }
-                }
-            }
 
+            MainServer.numOfRequestsMap = FileHandler.readHashMapFromFile(MainServer.NREQUESTSMAP_PATH);
+            //FileHandler.printHashMap(MainServer.numOfRequestsMap);
+            if (!MainServer.numOfRequestsMap.containsKey(this.clientName)) {
+                MainServer.numOfRequestsMap.put(this.clientName, this.numOfRequests);
+            } else {
+                this.numOfRequests = MainServer.numOfRequestsMap.get(this.clientName);
+                System.out.println("*** Welcome again, " + this.clientName + "!");
+                System.out.println("Number of Requests: " + numOfRequests);
+            }
             return new byte[0];
         }
     }
@@ -237,8 +244,10 @@ public class ClientHandler extends Thread {
      * @throws IOException when an I/O error occurs when sending the file
      */
     private void sendFile(byte[] content) throws Exception {
-        System.out.println("Hello " + this.clientName);
         this.numOfRequests++;
+        MainServer.numOfRequestsMap = FileHandler.readHashMapFromFile(MainServer.NREQUESTSMAP_PATH);
+        MainServer.numOfRequestsMap.put(this.clientName, this.numOfRequests);
+        FileHandler.saveHashMapToTextFile(MainServer.numOfRequestsMap, MainServer.NREQUESTSMAP_PATH);
         //Sending the file to the client, before sending check if the file is too big
         byte[] encryptedMessage = Encryption.encryptMessage(content, sharedSecret.toByteArray(), symmetricAlgorithm);
         byte[] digest = Integrity.generateDigest(content, sharedSecret.toByteArray(), hashingAlgorithm);
@@ -247,53 +256,58 @@ public class ClientHandler extends Thread {
         out.flush();
     }
 
+    private void sendErrorMessage() throws IOException {
+        out.writeUTF("The selected Algorithm is not supported by this server!");
+        System.out.println("The selected Algorithm is not supported by this server!");
+        out.flush();
+        closeConnection();
+    }
+
     /**
      * Receive the algorithms selected by the client, and verify if the server support them
      */
-    private void verifyAlgorithmServerSupport(String algorithm) throws IOException {
-        String algorithmsNameGrouped = "AESDES3DESede";
-        algorithm = in.readUTF();
-        System.out.println("Received selected algorithm: " + algorithm);
-        out.writeBoolean((true ? true : false));
-//
-//        String algorithmsNameGrouped = "AESDES3DESede";
-//        try {
-//            algorithm = in.readUTF();
-//        } catch (IOException e) {
-//            throw new RuntimeException(e);
-//        } finally{
-//            System.out.println("Received selected algorithm: " + algorithm);
-//            Boolean algorithmExists = (algorithmsNameGrouped.contains(algorithm) ? true : false);
-//            try {
-//                out.writeBoolean((algorithmExists ? true : false));
-//            } catch (IOException e) {
-//                throw new RuntimeException(e);
-//            }
-//        }
+    private boolean verifyAlgorithmServerSupport(String receivedAlgorithm) {
+        String[] availableAlgorithms = {"AES", "DES", "DESede"};
+        System.out.println("Received selected algorithm: " + receivedAlgorithm);
+        boolean isAlgorithmAvailable = false;
 
+        for (String availableAlgorithm : availableAlgorithms) {
+            if (receivedAlgorithm.equals(availableAlgorithm)) {
+                isAlgorithmAvailable = true;
+                break;
+            }
+        }
 
+        if (isAlgorithmAvailable) {
+            System.out.println("Algorithm is available");
+        } else {
+            System.out.println("Algorithm is not available");
+        }
 
+        return isAlgorithmAvailable;
     }
 
+    private boolean verifyHashAlgorithmServerSupport(String receivedAlgorithm) {
+        String[] availableAlgorithms = {"HmacMD5", "HmacSHA256","HmacSHA512"};
+        System.out.println("Received selected algorithm: " + receivedAlgorithm);
+        boolean isAlgorithmAvailable = false;
 
+        for (String availableAlgorithm : availableAlgorithms) {
+            if (receivedAlgorithm.equals(availableAlgorithm)) {
+                isAlgorithmAvailable = true;
+                break;
+            }
+        }
 
+        if (isAlgorithmAvailable) {
+            System.out.println("Algorithm is available");
+        } else {
+            System.out.println("Algorithm is not available");
+        }
 
-    //algorithmValidation(this.symmetricAlgorithm);
+        return isAlgorithmAvailable;
+    }
 
-    //algorithmValidation(this.symmetricAlgorithm);
-
-    /**
-     * Validation of algorithms supported by the server
-     */
-//    public void algorithmValidation(String algorithm) {
-//        if (!algorithm){
-//            out.writeUTF("NOK! Algorithm not supported by the server.\nSelect a valid one.");
-//        } else {
-//            out.writeUTF("OK! Algorithm supported.");
-//        }
-//
-//    }
-//    "Received selected algorithm: " + this.symmetricAlgorithm + "!"
 
 
     /**
@@ -301,8 +315,10 @@ public class ClientHandler extends Thread {
      */
     private void closeConnection() {
         try {
-            isConnected = false;
-            this.out.close();
+            client.close();
+            out.close();
+            in.close();
+
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
