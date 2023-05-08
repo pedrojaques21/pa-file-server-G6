@@ -125,6 +125,10 @@ public class ClientHandler extends Thread {
         out.flush();
     }
 
+    public BigInteger getSharedSecret() {
+        return sharedSecret;
+    }
+
     @Override
     public void run ( ) {
         super.run ( );
