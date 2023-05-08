@@ -45,7 +45,7 @@ public class Client {
      * @param port the port to connect to
      * @throws IOException when an I/O error occurs when creating the socket
      */
-    public Client(int port, String name) throws Exception {
+    public Client(int port, String name,String wayToChooseSymmetric,String wayToChooseHashing) throws Exception {
 
         this.name = name;
         this.numOfRequests = 0;
@@ -70,12 +70,21 @@ public class Client {
         userDir = Files.createTempDirectory("fileServer").toFile().getAbsolutePath();
         System.out.println("Temporary directory path " + userDir);
 
-        handshake();
+        handshake(wayToChooseSymmetric,wayToChooseHashing);
 
         File filesDirectory = new File(userDirectory.getAbsolutePath() + "/files");
         if (!filesDirectory.exists()) {
             filesDirectory.mkdirs();
         }
+    }
+
+
+    public void setSymmetricAlgorithm(String symmetricAlgorithm) {
+        this.symmetricAlgorithm = symmetricAlgorithm;
+    }
+
+    public void setHashingAlgorithm(String hashingAlgorithm) {
+        this.hashingAlgorithm = hashingAlgorithm;
     }
 
     public String getName() {
@@ -111,21 +120,32 @@ public class Client {
         return in;
     }
 
-    private void handshake() throws Exception {
+    private void handshake(String wayToChooseSymmetric, String wayToChooseHashing) throws Exception {
 
-        this.symmetricAlgorithm = menuSymmetricAlgorithm();
-        out.writeUTF(this.symmetricAlgorithm);
-        out.flush();
-        System.out.println("Sent to server the selected algorithm: " + this.symmetricAlgorithm);
+        if(wayToChooseSymmetric.equals("User")) {
+            this.symmetricAlgorithm = menuSymmetricAlgorithm();
+            out.writeUTF(this.symmetricAlgorithm);
+            out.flush();
+            System.out.println("Sent to server the selected algorithm: " + this.symmetricAlgorithm);
 
-        this.hashingAlgorithm = menuHashingAlgorithm();
-        out.writeUTF(this.hashingAlgorithm);
-        out.flush();
-        System.out.println("Sent to server the selected algorithm: " + this.hashingAlgorithm);
-
+            this.hashingAlgorithm = menuHashingAlgorithm();
+            out.writeUTF(this.hashingAlgorithm);
+            out.flush();
+            System.out.println("Sent to server the selected algorithm: " + this.hashingAlgorithm);
+        }else{
+            this.symmetricAlgorithm = wayToChooseSymmetric;
+            out.writeUTF(this.symmetricAlgorithm);
+            out.flush();
+            this.hashingAlgorithm = wayToChooseHashing;
+            out.writeUTF(this.hashingAlgorithm);
+            out.flush();
+        }
         String response = in.readUTF();
         if(response.equals("The selected Algorithm is not supported by this server!")){
-            System.out.println("*** The selected Algorithm is not supported by this server! ***\n\t\t*** You are now going to be disconnected! ***");
+            System.out.println("**********************************************************************");
+            System.out.println("*** Error: The selected Algorithm is not supported by this server! ***");
+            System.out.println("***              You are now going to be disconnected!             ***");
+            System.out.println("**********************************************************************");
             closeConnection();
         }else{
             System.out.println("*** " + response + " ***");
@@ -250,7 +270,7 @@ public class Client {
                     System.out.println("****************************************");
                     System.out.println("***      Renewing the Handshake      ***");
                     System.out.println("****************************************\n");
-                    renewHandshake();
+                    renewHandshake("User","User");
                     this.numOfRequests = 0;
                     System.out.println("****************************************");
                     System.out.println("***    Write the path of the file    ***");
@@ -274,22 +294,33 @@ public class Client {
     /**
      * Renews the Handshake after 5 requests to the server
      */
-    private void renewHandshake() throws Exception {
+    public void renewHandshake(String wayToChooseSymmetric, String wayToChooseHashing) throws Exception {
 
-        this.symmetricAlgorithm = menuSymmetricAlgorithm();
-        out.writeUTF(this.symmetricAlgorithm);
-        out.flush();
-        System.out.println("Sent to server the selected algorithm: " + this.symmetricAlgorithm);
+        if(wayToChooseSymmetric.equals("User")) {
+            this.symmetricAlgorithm = menuSymmetricAlgorithm();
+            out.writeUTF(this.symmetricAlgorithm);
+            out.flush();
+            System.out.println("Sent to server the selected algorithm: " + this.symmetricAlgorithm);
 
-        this.hashingAlgorithm = menuHashingAlgorithm();
-        out.writeUTF(this.hashingAlgorithm);
-        out.flush();
-        System.out.println("Sent to server the selected algorithm: " + this.hashingAlgorithm);
+            this.hashingAlgorithm = menuHashingAlgorithm();
+            out.writeUTF(this.hashingAlgorithm);
+            out.flush();
+            System.out.println("Sent to server the selected algorithm: " + this.hashingAlgorithm);
+        }else{
+            this.symmetricAlgorithm = wayToChooseSymmetric;
+            out.writeUTF(this.symmetricAlgorithm);
+            out.flush();
+            this.hashingAlgorithm = wayToChooseHashing;
+            out.writeUTF(this.hashingAlgorithm);
+            out.flush();
+        }
 
         String response = in.readUTF();
-        System.out.println("Passou?");
         if(response.equals("The selected Algorithm is not supported by this server!")){
-            System.out.println("*** The selected Algorithm is not supported by this server! ***\n\t\t*** You are now going to be disconnected! ***");
+            System.out.println("**********************************************************************");
+            System.out.println("*** Error: The selected Algorithm is not supported by this server! ***");
+            System.out.println("***              You are now going to be disconnected!             ***");
+            System.out.println("**********************************************************************");
             closeConnection();
         }else{
             System.out.println("*** " + response + " ***");
@@ -334,7 +365,11 @@ public class Client {
             // Check if the decrypted message starts with "ERROR"
             if (new String(decryptedMessage).startsWith("ERROR")) {
                 // Print an error message
-                System.out.println("*** Error: the file you requested does not exist! Your number of allowed requests decreased *** \n *** Choose another one! ***");
+                System.out.println("*****************************************************************************************");
+                System.out.println("***                 Error: the file you requested does not exist!                     ***");
+                System.out.println("***      Your number of allowed requests before handshake renew decreased by one      ***");
+                System.out.println("***                               Choose another one!                                 ***");
+                System.out.println("*****************************************************************************************");
             } else {
                 // Writes the decrypted message to the file
                 FileHandler.writeFile(this.name + "/files/" + fileName, new String(decryptedMessage).getBytes());

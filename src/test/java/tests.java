@@ -1,14 +1,8 @@
 import org.junit.jupiter.api.*;
-
-import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.IOException;
+import java.io.FileNotFoundException;
 import java.net.Socket;
-import java.security.PublicKey;
-import java.util.Arrays;
 import java.util.Scanner;
-import java.util.concurrent.locks.ReentrantLock;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 public class tests {
@@ -17,6 +11,7 @@ public class tests {
     private static Server server;
 
     private static Thread serverThread;
+
 
     @BeforeAll
     public static void startServer() throws Exception {
@@ -27,7 +22,7 @@ public class tests {
 
     @BeforeEach
     public void setUp() throws Exception {
-        client = new Client(8000, "testClient");
+        client = new Client(8000, "TestingClient", "AES", "HmacSHA256");
     }
 
     @AfterEach
@@ -35,12 +30,18 @@ public class tests {
         client.getClient().close();
     }
 
+    @Test
+    @DisplayName("Check if handshake is valid")
+    public void AAcheckHandShake() { //name starts with AA to be the frist test being executed
+        String clientSharedSecret = String.valueOf(client.getSharedSecret());
+        String serverSharedSecret = String.valueOf(server.getClientHandlerSharedSecret());
+        assertEquals(clientSharedSecret, serverSharedSecret);
+    }
 
     @Test
     @DisplayName("Check if user is created correctly")
-    public void createClient() throws Exception {
-        String name = "testClient";
-        //Client client = new Client(8000, name);
+    public void createClient() {
+        String name = "TestingClient";
         String clientName = client.getName();
         Socket clientScoket = client.getClient();
         assertAll(
@@ -59,15 +60,6 @@ public class tests {
                 () -> assertNotNull(client.getSharedSecret())
         );
     }
-
-    @Test
-    @DisplayName("Check if handshake is valid")
-    public void checkHandShake() {
-        String clientSharedSecret = String.valueOf(client.getSharedSecret());
-        String serverSharedSecret = String.valueOf(server.getClientHandlerSharedSecret());
-        assertEquals(clientSharedSecret, serverSharedSecret);
-    }
-
     @Test
     @DisplayName("Check if message is being received in a encrypted way")
     public void encryptingMessage() throws Exception {
@@ -109,9 +101,9 @@ public class tests {
     public void differentHandshakeValues() throws Exception {
         String requestFile = "GET : hello.txt";
         client.sendMessage(requestFile);
-        Client client1 = new Client(8000, "client1");
+        Client client1 = new Client(8000, "James", "AES", "HmacSHA256");
         client1.sendMessage(requestFile);
-        Client client2 = new Client(8000, "client2");
+        Client client2 = new Client(8000, "Jared", "AES", "HmacSHA256");
         client2.sendMessage(requestFile);
         assertAll(
                 () -> assertNotEquals(client.getSharedSecret(), client1.getSharedSecret()),
@@ -122,10 +114,10 @@ public class tests {
 
     @Test
     @DisplayName("Two clients requesting files at the same time")
-    public void differentClientsRequesting() throws Exception{
+    public void differentClientsRequesting() throws Exception {
         String requestFile1 = "GET : hello.txt";
         client.sendMessage(requestFile1);
-        Client client1 = new Client(8000,"client1");
+        Client client1 = new Client(8000, "Joe", "AES", "HmacSHA256");
         client1.sendMessage(requestFile1);
         byte[] message1 = client.processResponse(requestFile1, client.getIn());
         byte[] message2 = client1.processResponse(requestFile1, client1.getIn());
@@ -140,11 +132,11 @@ public class tests {
 
     @Test
     @DisplayName("Two clients requesting different files at the same time")
-    public void differentClientsRequestingDifferentFiles() throws Exception{
+    public void differentClientsRequestingDifferentFiles() throws Exception {
         String requestFile1 = "GET : hello.txt";
         String requestFile2 = "GET : bye.txt";
         client.sendMessage(requestFile1);
-        Client client1 = new Client(8000,"client1");
+        Client client1 = new Client(8000, "Jared", "AES", "HmacSHA256");
         client1.sendMessage(requestFile2);
         byte[] message1 = client.processResponse(requestFile1, client.getIn());
         byte[] message2 = client1.processResponse(requestFile2, client1.getIn());
@@ -160,24 +152,94 @@ public class tests {
     @Test
     @DisplayName("Check if the handshake is renewed after 5 requests")
     public void handShakeRenewCheck() throws Exception {
-        Client cli = new Client(8000, "Tester");
-        String sharedSecretBeforeRenewHandShake = String.valueOf(cli.getSharedSecret());
+        String sharedSecretBeforeRenewHandShake = String.valueOf(client.getSharedSecret());
+        String firstAlgorithmUsed = client.getSymmetricAlgorithm();
         String request = "GET : hello.txt";
-        cli.sendMessage(request);
-        cli.processResponse(request, cli.getIn());
-        cli.sendMessage(request);
-        cli.processResponse(request, cli.getIn());
-        cli.sendMessage(request);
-        cli.processResponse(request, cli.getIn());
-        cli.sendMessage(request);
-        cli.processResponse(request, cli.getIn());
-        cli.sendMessage(request);
-        cli.processResponse(request, cli.getIn());
-        cli.renewHandshake();
-        String shareSecretAfterRenewHandShake = String.valueOf(cli.getSharedSecret());
-        assertNotEquals(shareSecretAfterRenewHandShake, sharedSecretBeforeRenewHandShake);
+        client.sendMessage(request);
+        client.processResponse(request, client.getIn());
+        client.sendMessage(request);
+        client.processResponse(request, client.getIn());
+        client.sendMessage(request);
+        client.processResponse(request, client.getIn());
+        client.sendMessage(request);
+        client.processResponse(request, client.getIn());
+        client.sendMessage(request);
+        client.processResponse(request, client.getIn());
+        client.renewHandshake("AES", "HmacSHA256");
+        String shareSecretAfterRenewHandShake = String.valueOf(client.getSharedSecret());
+        assertAll(
+                () -> assertNotEquals(shareSecretAfterRenewHandShake, sharedSecretBeforeRenewHandShake),
+                () -> assertEquals(firstAlgorithmUsed, client.getSymmetricAlgorithm())
+        );
 
     }
+
+    @Test
+    @DisplayName("Check if symmetric algorithm is swapped after handshake is renewed")
+    public void handShakeRenewAlgChange() throws Exception {
+        String sharedSecretBeforeRenewHandShake = String.valueOf(client.getSharedSecret());
+        String firstAlgorithmUsed = client.getSymmetricAlgorithm();
+        String request = "GET : hello.txt";
+        client.sendMessage(request);
+        client.processResponse(request, client.getIn());
+        client.sendMessage(request);
+        client.processResponse(request, client.getIn());
+        client.sendMessage(request);
+        client.processResponse(request, client.getIn());
+        client.sendMessage(request);
+        client.processResponse(request, client.getIn());
+        client.sendMessage(request);
+        client.processResponse(request, client.getIn());
+        client.renewHandshake("DES", "HmacSHA256");
+        String shareSecretAfterRenewHandShake = String.valueOf(client.getSharedSecret());
+        assertAll(
+                () -> assertNotEquals(shareSecretAfterRenewHandShake, sharedSecretBeforeRenewHandShake),
+                () -> assertNotEquals(firstAlgorithmUsed, client.getSymmetricAlgorithm())
+        );
+    }
+
+    @Test
+    @DisplayName("Check if hashing algorithm is swapped after handshake is renewed")
+    public void handShakeRenewHashChange() throws Exception {
+        String sharedSecretBeforeRenewHandShake = String.valueOf(client.getSharedSecret());
+        String firstAlgorithmUsed = client.getHashingAlgorithm();
+        String request = "GET : hello.txt";
+        client.sendMessage(request);
+        client.processResponse(request, client.getIn());
+        client.sendMessage(request);
+        client.processResponse(request, client.getIn());
+        client.sendMessage(request);
+        client.processResponse(request, client.getIn());
+        client.sendMessage(request);
+        client.processResponse(request, client.getIn());
+        client.sendMessage(request);
+        client.processResponse(request, client.getIn());
+        client.renewHandshake("AES", "HmacSHA512");
+        String shareSecretAfterRenewHandShake = String.valueOf(client.getSharedSecret());
+        assertAll(
+                () -> assertNotEquals(shareSecretAfterRenewHandShake, sharedSecretBeforeRenewHandShake),
+                () -> assertNotEquals(firstAlgorithmUsed, client.getHashingAlgorithm())
+        );
+    }
+
+    @Test
+    @DisplayName("Check if long files are sent correctly")
+    public void testLongFiles() throws Exception {
+        File myObj = new File("server/files/cleancode.txt");
+        Scanner myReader = new Scanner(myObj);
+        StringBuilder data = new StringBuilder();
+        while (myReader.hasNextLine()) {
+            String line = myReader.nextLine();
+            data.append(line).append(System.lineSeparator());
+            System.out.println(line);
+        }
+        myReader.close();
+        String request = "GET : cleancode.txt";
+        client.sendMessage(request);
+        byte[] message = client.processResponse(request, client.getIn());
+        assertEquals(data.toString(), new String(message));
+    }
+
 
 
 }
