@@ -1,7 +1,12 @@
 import org.junit.jupiter.api.*;
+
+import javax.management.DescriptorKey;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.math.BigInteger;
 import java.net.Socket;
+import java.util.Arrays;
 import java.util.Scanner;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -31,14 +36,6 @@ public class tests {
     }
 
     @Test
-    @DisplayName("Check if handshake is valid")
-    public void AAcheckHandShake() { //name starts with AA to be the frist test being executed
-        String clientSharedSecret = String.valueOf(client.getSharedSecret());
-        String serverSharedSecret = String.valueOf(server.getClientHandlerSharedSecret());
-        assertEquals(clientSharedSecret, serverSharedSecret);
-    }
-
-    @Test
     @DisplayName("Check if user is created correctly")
     public void createClient() {
         String name = "TestingClient";
@@ -57,7 +54,8 @@ public class tests {
                 () -> assertNotNull(client.getPublicRSAKey()),
                 () -> assertNotNull(client.getPrivateRSAKey()),
                 () -> assertNotNull(client.getServerPublicRSAKey()),
-                () -> assertNotNull(client.getSharedSecret())
+                () -> assertNotNull(client.getSharedSecret()),
+                () -> assertEquals(String.valueOf(client.getSharedSecret()),String.valueOf(server.getClientHandlerSharedSecret()))
         );
     }
     @Test
@@ -72,10 +70,26 @@ public class tests {
         }
         myReader.close();
         String request = "GET : hello.txt";
+        Message message = client.sendMessage(request);
+        assertNotEquals(data, message.toString());
+    }
+
+    @Test
+    @DisplayName("Check if message is being decrypted correctly")
+    public void decryptingMessage() throws Exception {
+        File myObj = new File("server/files/hello.txt");
+        Scanner myReader = new Scanner(myObj);
+        String data = null;
+        while (myReader.hasNextLine()) {
+            data = myReader.nextLine();
+            System.out.println(data);
+        }
+        myReader.close();
+        String request = "GET : hello.txt";
         client.sendMessage(request);
-        Message message = new Message(client.getIn().readAllBytes(), client.getSharedSecret().toByteArray());
-        String stringMessage = message.toString();
-        assertNotEquals(data, stringMessage);
+        Message response = (Message) client.getIn().readObject();
+        byte[] decryptedMessage = Encryption.decryptMessage(response.getMessage(), client.getSharedSecret().toByteArray(), client.getSymmetricAlgorithm());
+        assertEquals(data, new String(decryptedMessage));
     }
 
     @Test
@@ -95,6 +109,25 @@ public class tests {
         assertEquals(data, new String(message));
     }
 
+    @Test
+    @DisplayName("Checking if changing the Mac key returns an error")
+    public void changingHashKey() throws Exception{
+        assertThrows(javax.crypto.BadPaddingException.class, () -> {
+            String request = "GET : hello.txt";
+            client.sendMessage(request);
+            Message response = (Message) client.getIn().readObject();
+            byte[] secretKey = client.getSharedSecret().toByteArray();
+            byte[] modifiedSecretKey = new byte[secretKey.length];
+
+            for (int i = 0; i < secretKey.length; i++) {
+                // Add 10 to each byte value, ensuring it stays within the valid range (-128 to 127)
+                int modifiedByte = (secretKey[i] + 10) % 256;
+                modifiedSecretKey[i] = (byte) modifiedByte;
+            }
+            byte[] decryptedMessage = Encryption.decryptMessage(response.getMessage(), modifiedSecretKey, client.getSymmetricAlgorithm());
+        });
+
+    }
 
     @Test
     @DisplayName("Check if multiple clients have different handshake values")
@@ -238,6 +271,45 @@ public class tests {
         client.sendMessage(request);
         byte[] message = client.processResponse(request, client.getIn());
         assertEquals(data.toString(), new String(message));
+    }
+
+    @Test
+    @DisplayName("Check if choosing non suppoted algorithm returns error")
+    public void nonSupportedAlgorithm() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            Client testClient = new Client(8000,"Joe","RC4","Blake2");
+            String response = testClient.getIn().readUTF();
+            String errorMessage = "The selected Algorithm is not supported by this server!";
+            assertEquals(response,errorMessage);
+        });
+
+        String expectedMessage = "Invalid choice"; //expected exception message
+        String actualMessage = exception.getMessage();
+        assertEquals(expectedMessage, actualMessage);
+
+
+    }
+
+    @Test
+    @DisplayName("Check if user is notified if asks for a non existing file")
+    public void nonExistingFile() throws Exception {
+        client.sendMessage("GET : nonExistingFile.txt");
+        byte[] response = client.processResponse("GET : nonExistingFile.txt",client.getIn());
+        String errorMessage = "ERROR - FILE NOT FOUND";
+        assertEquals(errorMessage,new String(response));
+    }
+
+    @Test
+    @DisplayName("Check if user is notified when asking for a file using a wrong format")
+    public void wrongFormatFile() throws Exception {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            client.sendMessage("GET: fileWrongFormat");
+            client.processResponse(RequestUtils.getFileNameFromRequest("GET: fileWrongFormat"), client.getIn());
+        });
+
+        String expectedMessage = "Invalid request"; //expected exception message
+        String actualMessage = exception.getMessage();
+        assertEquals(expectedMessage, actualMessage);
     }
 
 

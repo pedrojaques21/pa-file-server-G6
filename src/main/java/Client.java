@@ -31,8 +31,8 @@ public class Client {
 
     private String symmetricAlgorithm;
     private String hashingAlgorithm;
-    public static Scanner input = new Scanner(System.in);
 
+    public static Scanner input = new Scanner(System.in);
 
     private boolean clientExists;
 
@@ -45,7 +45,7 @@ public class Client {
      * @param port the port to connect to
      * @throws IOException when an I/O error occurs when creating the socket
      */
-    public Client(int port, String name,String wayToChooseSymmetric,String wayToChooseHashing) throws Exception {
+    public Client(int port, String name, String wayToChooseSymmetric, String wayToChooseHashing) throws Exception {
 
         this.name = name;
         this.numOfRequests = 0;
@@ -70,7 +70,7 @@ public class Client {
         userDir = Files.createTempDirectory("fileServer").toFile().getAbsolutePath();
         System.out.println("Temporary directory path " + userDir);
 
-        handshake(wayToChooseSymmetric,wayToChooseHashing);
+        handshake(wayToChooseSymmetric, wayToChooseHashing);
 
         File filesDirectory = new File(userDirectory.getAbsolutePath() + "/files");
         if (!filesDirectory.exists()) {
@@ -78,14 +78,6 @@ public class Client {
         }
     }
 
-
-    public void setSymmetricAlgorithm(String symmetricAlgorithm) {
-        this.symmetricAlgorithm = symmetricAlgorithm;
-    }
-
-    public void setHashingAlgorithm(String hashingAlgorithm) {
-        this.hashingAlgorithm = hashingAlgorithm;
-    }
 
     public String getName() {
         return name;
@@ -122,7 +114,7 @@ public class Client {
 
     private void handshake(String wayToChooseSymmetric, String wayToChooseHashing) throws Exception {
 
-        if(wayToChooseSymmetric.equals("User")) {
+        if (wayToChooseSymmetric.equals("User")) {
             this.symmetricAlgorithm = menuSymmetricAlgorithm();
             out.writeUTF(this.symmetricAlgorithm);
             out.flush();
@@ -132,7 +124,7 @@ public class Client {
             out.writeUTF(this.hashingAlgorithm);
             out.flush();
             System.out.println("Sent to server the selected algorithm: " + this.hashingAlgorithm);
-        }else{
+        } else {
             this.symmetricAlgorithm = wayToChooseSymmetric;
             out.writeUTF(this.symmetricAlgorithm);
             out.flush();
@@ -141,13 +133,13 @@ public class Client {
             out.flush();
         }
         String response = in.readUTF();
-        if(response.equals("The selected Algorithm is not supported by this server!")){
+        if (response.equals("The selected Algorithm is not supported by this server!")) {
             System.out.println("**********************************************************************");
             System.out.println("*** Error: The selected Algorithm is not supported by this server! ***");
             System.out.println("***              You are now going to be disconnected!             ***");
             System.out.println("**********************************************************************");
-            closeConnection();
-        }else{
+            closeConnection(1);
+        } else {
             System.out.println("*** " + response + " ***");
         }
 
@@ -251,14 +243,14 @@ public class Client {
                 System.out.println("Number of Requests Remaining: " + (MAX_NUM_OF_REQUESTS - this.numOfRequests));
             } else {
                 System.out.println("*** Welcome, " + this.name + "! ***\n You are now able to enjoy file storage.");
-
             }
             while (isConnected) {
                 if (this.numOfRequests < MAX_NUM_OF_REQUESTS) {
                     // Reads the message to extract the path of the file
-                    System.out.println("****************************************");
-                    System.out.println("***    Write the path of the file    ***");
-                    System.out.println("****************************************\n");
+                    System.out.println("**********************************************************");
+                    System.out.println("***            Write the path of the file              ***");
+                    System.out.println("*** With the following format: GET : nameOfTheFile.txt ***");
+                    System.out.println("********************************************************\n");
                     String request = usrInput.nextLine();
                     // Request the file
                     sendMessage(request);
@@ -270,11 +262,12 @@ public class Client {
                     System.out.println("****************************************");
                     System.out.println("***      Renewing the Handshake      ***");
                     System.out.println("****************************************\n");
-                    renewHandshake("User","User");
+                    renewHandshake("User", "User");
                     this.numOfRequests = 0;
-                    System.out.println("****************************************");
-                    System.out.println("***    Write the path of the file    ***");
-                    System.out.println("****************************************");
+                    System.out.println("**********************************************************");
+                    System.out.println("***            Write the path of the file              ***");
+                    System.out.println("*** With the following format: GET : nameOfTheFile.txt ***");
+                    System.out.println("********************************************************\n");
                     String request = usrInput.nextLine();
                     // Request the file
                     sendMessage(request);
@@ -283,12 +276,12 @@ public class Client {
                 }
             }
             // Close connection
-            closeConnection();
+            closeConnection(2);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
         // Close connection
-        closeConnection();
+        closeConnection(2);
     }
 
     /**
@@ -296,7 +289,7 @@ public class Client {
      */
     public void renewHandshake(String wayToChooseSymmetric, String wayToChooseHashing) throws Exception {
 
-        if(wayToChooseSymmetric.equals("User")) {
+        if (wayToChooseSymmetric.equals("User")) {
             this.symmetricAlgorithm = menuSymmetricAlgorithm();
             out.writeUTF(this.symmetricAlgorithm);
             out.flush();
@@ -306,7 +299,7 @@ public class Client {
             out.writeUTF(this.hashingAlgorithm);
             out.flush();
             System.out.println("Sent to server the selected algorithm: " + this.hashingAlgorithm);
-        }else{
+        } else {
             this.symmetricAlgorithm = wayToChooseSymmetric;
             out.writeUTF(this.symmetricAlgorithm);
             out.flush();
@@ -316,13 +309,13 @@ public class Client {
         }
 
         String response = in.readUTF();
-        if(response.equals("The selected Algorithm is not supported by this server!")){
+        if (response.equals("The selected Algorithm is not supported by this server!")) {
             System.out.println("**********************************************************************");
             System.out.println("*** Error: The selected Algorithm is not supported by this server! ***");
             System.out.println("***              You are now going to be disconnected!             ***");
             System.out.println("**********************************************************************");
-            closeConnection();
-        }else{
+            closeConnection(1);
+        } else {
             System.out.println("*** " + response + " ***");
         }
 
@@ -387,7 +380,7 @@ public class Client {
      * @param name - name of the client
      * @throws Exception
      */
-    private void greeting(String name) throws Exception {
+    public void greeting(String name) throws Exception {
         // Encrypts the message
         byte[] encryptedMessage = Encryption.encryptMessage(name.getBytes(), sharedSecret.toByteArray(),
                 this.symmetricAlgorithm);
@@ -408,7 +401,7 @@ public class Client {
      * @param filePath the message to send
      * @throws IOException when an I/O error occurs when sending the message
      */
-    public void sendMessage(String filePath) throws Exception {
+    public Message sendMessage(String filePath) throws Exception {
         this.numOfRequests++;
         // Encrypts the message
         byte[] encryptedMessage = Encryption.encryptMessage(filePath.getBytes(), sharedSecret.toByteArray(),
@@ -421,6 +414,7 @@ public class Client {
         // Sends the message
         out.writeUnshared(messageObj);
         out.flush();
+        return messageObj;
     }
 
 
@@ -432,10 +426,10 @@ public class Client {
     public String menuSymmetricAlgorithm() {
         int option;
         do {
-            System.out.println("*********************************************************");
-            System.out.println("*           Encryption Symmetric Algorithm              *");
-            System.out.println("* (1)-AES256; (2)-DES; (3)-3DES; (4)-RC4(Not supported) *");
-            System.out.println("*********************************************************");
+            System.out.println("*************************************************************");
+            System.out.println("***           Encryption Symmetric Algorithm              ***");
+            System.out.println("*** (1)-AES256; (2)-DES; (3)-3DES; (4)-RC4(Not supported) ***");
+            System.out.println("*************************************************************");
             option = input.nextInt();
 
             switch (option) {
@@ -472,10 +466,10 @@ public class Client {
     public String menuHashingAlgorithm() {
         int option;
         do {
-            System.out.println("*************************************************************");
-            System.out.println("*                    Hashing Algorithm                      *");
-            System.out.println("* (1)-MD5; (2)-SHA256; (3)-SHA512; (4)Blake2(Not Supported) *");
-            System.out.println("*************************************************************");
+            System.out.println("*****************************************************************");
+            System.out.println("***                    Hashing Algorithm                      ***");
+            System.out.println("*** (1)-MD5; (2)-SHA256; (3)-SHA512; (4)Blake2(Not Supported) ***");
+            System.out.println("*****************************************************************");
             option = input.nextInt();
 
             switch (option) {
@@ -511,13 +505,17 @@ public class Client {
     /**
      * Closes the connection by closing the socket and the streams.
      */
-    private void closeConnection() {
+    private void closeConnection(int type) {
         try {
             this.isConnected = false;
             client.close();
             out.close();
             in.close();
-            System.exit(1);
+            if (type == 1) {
+                throw new IllegalArgumentException("Invalid choice");
+            } else {
+                System.exit(0);
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

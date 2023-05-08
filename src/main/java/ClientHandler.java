@@ -76,6 +76,10 @@ public class ClientHandler extends Thread {
 
     }
 
+    public String getClientName() {
+        return clientName;
+    }
+
     private void sendSuccessMessage() throws IOException {
         out.writeUTF("The selected Algorithm is supported by this server, enjoy!");
         System.out.println("The selected Algorithm is supported by this server, enjoy!");
@@ -318,7 +322,6 @@ public class ClientHandler extends Thread {
             client.close();
             out.close();
             in.close();
-
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
