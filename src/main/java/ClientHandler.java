@@ -77,8 +77,13 @@ public class ClientHandler extends Thread {
      *
      * @throws IOException when an I/O error occurs when closing the socket
      */
+    public String getClientName() {
+        return clientName;
+    }
+
     private void sendSuccessMessage() throws IOException {
         out.writeUTF("The selected Algorithm is supported by this server, enjoy!");
+        System.out.println("The selected Algorithm is supported by this server, enjoy!");
         out.flush();
     }
 
@@ -166,6 +171,8 @@ public class ClientHandler extends Thread {
 
                     if(!isSupported | !hashIsSupported){
                         sendErrorMessage();
+                    }else{
+                        sendSuccessMessage();
                     }
 
                     this.numOfRequests = 0;
@@ -265,7 +272,9 @@ public class ClientHandler extends Thread {
 
     private void sendErrorMessage() throws IOException {
         out.writeUTF("The selected Algorithm is not supported by this server!");
+        System.out.println("The selected Algorithm is not supported by this server!");
         out.flush();
+        closeConnection();
     }
 
     /**
@@ -326,10 +335,9 @@ public class ClientHandler extends Thread {
      */
     private void closeConnection() {
         try {
-            isConnected = false;
-            this.out.close();
-            this.in.close();
-            this.client.close();
+            client.close();
+            out.close();
+            in.close();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
