@@ -73,14 +73,10 @@ public class ClientHandler extends Thread {
     }
 
     /**
-     * Verifies if the algorithm is supported by the server.
+     * Sends a success message to the client indicating that the selected algorithm is supported by the server.
      *
      * @throws IOException when an I/O error occurs when closing the socket
      */
-    public String getClientName() {
-        return clientName;
-    }
-
     private void sendSuccessMessage() throws IOException {
         out.writeUTF("The selected Algorithm is supported by this server, enjoy!");
         System.out.println("The selected Algorithm is supported by this server, enjoy!");
@@ -92,7 +88,9 @@ public class ClientHandler extends Thread {
      * own public key.
      *
      * @param in the input stream
+     *
      * @return the public key of the sender
+     *
      * @throws Exception when the key distribution protocol fails
      */
     private PublicKey rsaKeyDistribution(ObjectInputStream in) throws Exception {
@@ -107,7 +105,9 @@ public class ClientHandler extends Thread {
      * Performs the Diffie-Hellman algorithm to agree on a shared private key.
      *
      * @param senderPublicRSAKey the public key of the sender
+     *
      * @return the shared secret key
+     *
      * @throws Exception when the key agreement protocol fails
      */
     private BigInteger agreeOnSharedSecret(PublicKey senderPublicRSAKey) throws Exception {
@@ -126,6 +126,7 @@ public class ClientHandler extends Thread {
      * Sends the public key to the sender.
      *
      * @param publicKey the public key to be sent
+     *
      * @throws Exception when the public key cannot be sent
      */
     private void sendPublicDHKey(BigInteger publicKey) throws Exception {
@@ -235,7 +236,9 @@ public class ClientHandler extends Thread {
      * the decrypted message is returned.
      *
      * @param messageObj is the message object that is being received from the client
+     *
      * @return the decrypted message if its integrity is verified
+     *
      * @throws Exception when the message cannot be decrypted or its integrity is not verified
      */
     private byte[] decryptMessage(Message messageObj) throws Exception {
@@ -255,6 +258,7 @@ public class ClientHandler extends Thread {
      * Sends the file to the client
      *
      * @param content the content of the file to send
+     *
      * @throws IOException when an I/O error occurs when sending the file
      */
     private void sendFile(byte[] content) throws Exception {
@@ -305,6 +309,7 @@ public class ClientHandler extends Thread {
      * Verifies if the algorithm received from the client is supported by the server.
      *
      * @param receivedAlgorithm the algorithm received from the client
+     *
      * @return true if the algorithm is supported by the server, false otherwise
      */
     private boolean verifyHashAlgorithmServerSupport(String receivedAlgorithm) {
@@ -328,10 +333,8 @@ public class ClientHandler extends Thread {
         return isAlgorithmAvailable;
     }
 
-
-
     /**
-     * Closes the connection by closing the socket and the streams.
+     * Closes the connection by closing the socket and the streams.     *
      */
     private void closeConnection() {
         try {
