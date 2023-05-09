@@ -281,6 +281,7 @@ public class Client {
                     renewHandshake("User", "User");
                     this.macKey = generateMacKey();
                     sendMacKey();
+
                     this.numOfRequests = 0;
                     System.out.println("**********************************************************");
                     System.out.println("***            Write the path of the file              ***");
