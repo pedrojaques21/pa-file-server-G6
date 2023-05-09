@@ -177,7 +177,6 @@ public class Client {
 
         this.sharedSecret = agreeOnSharedSecret(serverPublicRSAKey);
     }
-
     private byte[] generateMacKey() throws NoSuchAlgorithmException {
         KeyGenerator keyGen = KeyGenerator.getInstance(this.hashingAlgorithm);
         SecretKey secretKey = keyGen.generateKey();
