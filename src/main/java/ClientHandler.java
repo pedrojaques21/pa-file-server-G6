@@ -4,8 +4,6 @@ import java.net.Socket;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.util.Arrays;
-
 
 /**
  * This class represents the client handler. It handles the communication with the client. It reads the file from the
