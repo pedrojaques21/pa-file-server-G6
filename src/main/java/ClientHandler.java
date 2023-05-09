@@ -5,6 +5,7 @@ import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 
+
 /**
  * This class represents the client handler. It handles the communication with the client. It reads the file from the
  * server and sends it to the client.
