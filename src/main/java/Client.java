@@ -56,15 +56,19 @@ public class Client {
         this.out = new ObjectOutputStream(client.getOutputStream());
         this.in = new ObjectInputStream(client.getInputStream());
         isConnected = true;
-        // Create a "private" directory for the client
+        // Create a "private" directory for the client, and a reads populate the number of requests HashMap
         userDirectory = new File(this.name);
         if (!userDirectory.exists()) {
             clientExists = false;
             userDirectory.mkdirs();
         } else {
-            MainServer.numOfRequestsMap = FileHandler.readHashMapFromFile(MainServer.NREQUESTSMAP_PATH);
-            this.numOfRequests = MainServer.numOfRequestsMap.get(this.name);
-            clientExists = true;
+            if (!MainServer.numOfRequestsMap.isEmpty()) {
+                MainServer.numOfRequestsMap = FileHandler.readHashMapFromFile(MainServer.NREQUESTSMAP_PATH);
+                this.numOfRequests = MainServer.numOfRequestsMap.get(this.name);
+                clientExists = true;
+            } else {
+                clientExists = false;
+            }
         }
         // Create a temporary directory for putting the request files
         userDir = Files.createTempDirectory("fileServer").toFile().getAbsolutePath();
