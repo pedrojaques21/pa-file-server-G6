@@ -67,20 +67,6 @@ public class Encryption {
         return encryptedMessageWithIV;
     }
 
-//    /**
-//     * @param message   the message to be decrypted with AES256 / DES / 3DES Algorithm
-//     * @param secretKey the secret key used to decrypt the message
-//     * @return the decrypted message as an array of bytes
-//     * @throws Exception when the encryption fails
-//     */
-//    public static byte[] decryptMessage(byte[] message , byte[] secretKey, String algorithm  ) throws Exception {
-//        byte[] secretKeyPadded = ByteBuffer.allocate ( keySize(algorithm)/8 ).put ( secretKey ).array ( );
-//        SecretKeySpec secreteKeySpec = new SecretKeySpec ( secretKeyPadded , algorithm );
-//        Cipher cipher = Cipher.getInstance ( algorithm + "/ECB/PKCS5Padding" );
-//        cipher.init ( Cipher.DECRYPT_MODE , secreteKeySpec );
-//        return cipher.doFinal ( message );
-//    }
-
     /**
      * Dencrypts a text using AES in CBC (Cipher Block Chaining) mode.
      * @param Message   the message to be decrypted
