@@ -1,0 +1,689 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <title>Coverage Report > Client</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">&lt;empty package name&gt;</a>
+</div>
+
+<h1>Coverage Summary for Class: Client (&lt;empty package name&gt;)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">Client</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    82,8%
+  </span>
+  <span class="absValue">
+    (24/29)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    52,3%
+  </span>
+  <span class="absValue">
+    (125/239)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;import javax.crypto.KeyGenerator;
+&nbsp;import javax.crypto.SecretKey;
+&nbsp;import java.io.*;
+&nbsp;import java.math.BigInteger;
+&nbsp;import java.net.Socket;
+&nbsp;import java.nio.file.Files;
+&nbsp;import java.security.*;
+&nbsp;import java.util.Arrays;
+&nbsp;import java.util.Scanner;
+&nbsp;
+&nbsp;/**
+&nbsp; * This class represents the client. The client sends the messages to the server by means of a socket. The use of Object
+&nbsp; * streams enables the sender to send any kind of object.
+&nbsp; */
+&nbsp;public class Client {
+&nbsp;
+&nbsp;    private final String name;
+&nbsp;    private static final String HOST = &quot;0.0.0.0&quot;;
+&nbsp;    private final Socket client;
+&nbsp;    private int numOfRequests;
+<b class="fc">&nbsp;    private final int MAX_NUM_OF_REQUESTS = 5;</b>
+&nbsp;    private final ObjectInputStream in;
+&nbsp;    private final ObjectOutputStream out;
+&nbsp;    private boolean isConnected;
+&nbsp;    private final String userDir;
+&nbsp;    private PublicKey publicRSAKey;
+&nbsp;    private PrivateKey privateRSAKey;
+&nbsp;    private PublicKey serverPublicRSAKey;
+&nbsp;    private BigInteger sharedSecret;
+&nbsp;
+&nbsp;    private String symmetricAlgorithm;
+&nbsp;    private String hashingAlgorithm;
+&nbsp;
+<b class="fc">&nbsp;    public static Scanner input = new Scanner(System.in);</b>
+&nbsp;
+&nbsp;    private boolean clientExists;
+&nbsp;
+&nbsp;    private File userDirectory;
+&nbsp;
+&nbsp;    private byte[] macKey;
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Constructs a Client object by specifying the port to connect to. The socket must be created before the sender can
+&nbsp;     * send a message.
+&nbsp;     *
+&nbsp;     * @param port the port to connect to
+&nbsp;     * @param name name of the client
+&nbsp;     * @param wayToChooseSymmetric way to choose the Symmetric algorithm, &quot;User&quot; if the user is the one choosing and &quot;name of algorithm&quot; if the algorithm is pre-defined, for testing purposes
+&nbsp;     * @param wayToChooseHashing way to choose the hashing algorithm, &quot;User&quot; if the user is the one choosing and &quot;name of algorithm&quot; if the algorithm is pre-defined, for testing purposes
+&nbsp;     *
+&nbsp;     * @throws IOException when an I/O error occurs when creating the socket
+&nbsp;     */
+<b class="fc">&nbsp;    public Client(int port, String name, String wayToChooseSymmetric, String wayToChooseHashing) throws Exception {</b>
+&nbsp;
+<b class="fc">&nbsp;        this.name = name;</b>
+<b class="fc">&nbsp;        this.numOfRequests = 0;</b>
+<b class="fc">&nbsp;        this.symmetricAlgorithm = &quot;&quot;;</b>
+<b class="fc">&nbsp;        this.hashingAlgorithm = &quot;&quot;;</b>
+&nbsp;
+<b class="fc">&nbsp;        client = new Socket(HOST, port);</b>
+<b class="fc">&nbsp;        this.out = new ObjectOutputStream(client.getOutputStream());</b>
+<b class="fc">&nbsp;        this.in = new ObjectInputStream(client.getInputStream());</b>
+<b class="fc">&nbsp;        isConnected = true;</b>
+&nbsp;        // Create a &quot;private&quot; directory for the client
+<b class="fc">&nbsp;        userDirectory = new File(this.name);</b>
+<b class="fc">&nbsp;        if (!userDirectory.exists()) {</b>
+<b class="nc">&nbsp;            clientExists = false;</b>
+<b class="nc">&nbsp;            userDirectory.mkdirs();</b>
+&nbsp;        } else {
+<b class="fc">&nbsp;            MainServer.numOfRequestsMap = FileHandler.readHashMapFromFile(MainServer.NREQUESTSMAP_PATH);</b>
+<b class="fc">&nbsp;            this.numOfRequests = MainServer.numOfRequestsMap.get(this.name);</b>
+<b class="fc">&nbsp;            clientExists = true;</b>
+&nbsp;        }
+&nbsp;        // Create a temporary directory for putting the request files
+<b class="fc">&nbsp;        userDir = Files.createTempDirectory(&quot;fileServer&quot;).toFile().getAbsolutePath();</b>
+<b class="fc">&nbsp;        System.out.println(&quot;Temporary directory path &quot; + userDir);</b>
+&nbsp;
+<b class="fc">&nbsp;        handshake(wayToChooseSymmetric, wayToChooseHashing);</b>
+&nbsp;
+<b class="fc">&nbsp;        this.macKey = generateMacKey();</b>
+<b class="fc">&nbsp;        sendMacKey();</b>
+<b class="fc">&nbsp;        File filesDirectory = new File(userDirectory.getAbsolutePath() + &quot;/files&quot;);</b>
+<b class="fc">&nbsp;        if (!filesDirectory.exists()) {</b>
+<b class="nc">&nbsp;            filesDirectory.mkdirs();</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;    public String getName() {
+<b class="fc">&nbsp;        return name;</b>
+&nbsp;
+&nbsp;    }
+&nbsp;
+&nbsp;    public Socket getClient() {
+<b class="fc">&nbsp;        return client;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public int getNumOfRequests() {
+<b class="nc">&nbsp;        return numOfRequests;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public PublicKey getPublicRSAKey() {
+<b class="fc">&nbsp;        return publicRSAKey;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public PrivateKey getPrivateRSAKey() {
+<b class="fc">&nbsp;        return privateRSAKey;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public PublicKey getServerPublicRSAKey() {
+<b class="fc">&nbsp;        return serverPublicRSAKey;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public BigInteger getSharedSecret() {
+<b class="fc">&nbsp;        return sharedSecret;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public ObjectInputStream getIn() {
+<b class="fc">&nbsp;        return in;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public byte[] getMacKey() {
+<b class="fc">&nbsp;        return macKey;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public void setMacKey(byte[] macKey) {
+<b class="fc">&nbsp;        this.macKey = macKey;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Realizes the Diffie-Hellman key distribution protocol to agree on a shared private key.
+&nbsp;     *
+&nbsp;     * @param wayToChooseHashing the way to choose the hashing algorithm
+&nbsp;     * @param wayToChooseSymmetric the way to choose the symmetric algorithm
+&nbsp;     *
+&nbsp;     * @throws Exception when an I/O error occurs when closing the socket
+&nbsp;     */
+&nbsp;    private void handshake(String wayToChooseSymmetric, String wayToChooseHashing) throws Exception {
+&nbsp;
+<b class="fc">&nbsp;        if (wayToChooseSymmetric.equals(&quot;User&quot;)) {</b>
+<b class="nc">&nbsp;            this.symmetricAlgorithm = menuSymmetricAlgorithm();</b>
+<b class="nc">&nbsp;            out.writeUTF(this.symmetricAlgorithm);</b>
+<b class="nc">&nbsp;            out.flush();</b>
+<b class="nc">&nbsp;            System.out.println(&quot;Sent to server the selected algorithm: &quot; + this.symmetricAlgorithm);</b>
+&nbsp;
+<b class="nc">&nbsp;            this.hashingAlgorithm = menuHashingAlgorithm();</b>
+<b class="nc">&nbsp;            out.writeUTF(this.hashingAlgorithm);</b>
+<b class="nc">&nbsp;            out.flush();</b>
+<b class="nc">&nbsp;            System.out.println(&quot;Sent to server the selected algorithm: &quot; + this.hashingAlgorithm);</b>
+&nbsp;        } else {
+<b class="fc">&nbsp;            this.symmetricAlgorithm = wayToChooseSymmetric;</b>
+<b class="fc">&nbsp;            out.writeUTF(this.symmetricAlgorithm);</b>
+<b class="fc">&nbsp;            out.flush();</b>
+<b class="fc">&nbsp;            this.hashingAlgorithm = wayToChooseHashing;</b>
+<b class="fc">&nbsp;            out.writeUTF(this.hashingAlgorithm);</b>
+<b class="fc">&nbsp;            out.flush();</b>
+&nbsp;        }
+<b class="fc">&nbsp;        String response = in.readUTF();</b>
+<b class="fc">&nbsp;        if (response.equals(&quot;The selected Algorithm is not supported by this server!&quot;)) {</b>
+<b class="fc">&nbsp;            System.out.println(&quot;**********************************************************************&quot;);</b>
+<b class="fc">&nbsp;            System.out.println(&quot;*** Error: The selected Algorithm is not supported by this server! ***&quot;);</b>
+<b class="fc">&nbsp;            System.out.println(&quot;***              You are now going to be disconnected!             ***&quot;);</b>
+<b class="fc">&nbsp;            System.out.println(&quot;**********************************************************************&quot;);</b>
+<b class="fc">&nbsp;            closeConnection(1);</b>
+&nbsp;        } else {
+<b class="fc">&nbsp;            System.out.println(&quot;*** &quot; + response + &quot; ***&quot;);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        //generate keys
+<b class="fc">&nbsp;        KeyPair keyPair = Encryption.generateKeyPair();</b>
+&nbsp;
+&nbsp;        //set client private key
+<b class="fc">&nbsp;        this.privateRSAKey = keyPair.getPrivate();</b>
+&nbsp;
+&nbsp;        //set client public key
+<b class="fc">&nbsp;        this.publicRSAKey = keyPair.getPublic();</b>
+&nbsp;
+<b class="fc">&nbsp;        File privateDirectory = new File(userDirectory.getAbsolutePath() + &quot;/private&quot;);</b>
+<b class="fc">&nbsp;        if (!privateDirectory.exists()) {</b>
+<b class="nc">&nbsp;            privateDirectory.mkdirs();</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        // Save the private key to a file in the &quot;private&quot; directory
+<b class="fc">&nbsp;        File privateKeyFile = new File(privateDirectory, &quot;private.key&quot;);</b>
+<b class="fc">&nbsp;        try (OutputStream outputStream = new FileOutputStream(privateKeyFile)) {</b>
+<b class="fc">&nbsp;            outputStream.write(privateRSAKey.getEncoded());</b>
+<b class="fc">&nbsp;        }</b>
+&nbsp;
+&nbsp;        // Save the public key to a file in the &quot;public_keys&quot; directory
+<b class="fc">&nbsp;        File publicKeyFile = new File(&quot;pki/public_keys&quot;, this.name + &quot;PUK.key&quot;);</b>
+<b class="fc">&nbsp;        try (OutputStream outputStream = new FileOutputStream(publicKeyFile)) {</b>
+<b class="fc">&nbsp;            outputStream.write(publicRSAKey.getEncoded());</b>
+<b class="fc">&nbsp;        }</b>
+&nbsp;
+&nbsp;        // Performs the RSA key distribution
+<b class="fc">&nbsp;        serverPublicRSAKey = rsaKeyDistribution();</b>
+&nbsp;
+<b class="fc">&nbsp;        this.sharedSecret = agreeOnSharedSecret(serverPublicRSAKey);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * This function is responsible to generate for each client a unique MacKey
+&nbsp;     * Inside the function it receives the choosen hashing algorithm and encodes de key
+&nbsp;     * @return the encoded key
+&nbsp;     * @throws NoSuchAlgorithmException if the hashing algorithm does not exist
+&nbsp;     */
+&nbsp;    private byte[] generateMacKey() throws NoSuchAlgorithmException {
+<b class="fc">&nbsp;        KeyGenerator keyGen = KeyGenerator.getInstance(this.hashingAlgorithm);</b>
+<b class="fc">&nbsp;        SecretKey secretKey = keyGen.generateKey();</b>
+<b class="fc">&nbsp;        return secretKey.getEncoded();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * This method is responsible for sending the generated key to the {@link ClientHandler}
+&nbsp;     * The key is sent in a encrypted way using the chosen symmetric algorithm and the shared secret
+&nbsp;     * @throws Exception
+&nbsp;     */
+&nbsp;    private void sendMacKey() throws Exception {
+<b class="fc">&nbsp;        byte[] encryptedMessage = Encryption.encryptMessage(this.macKey, sharedSecret.toByteArray(),this.symmetricAlgorithm);</b>
+<b class="fc">&nbsp;        out.writeObject(encryptedMessage);</b>
+<b class="fc">&nbsp;        out.flush();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Performs the Diffie-Hellman algorithm to agree on a shared private key.
+&nbsp;     *
+&nbsp;     * @param serverPublicRSAKey the public key of the receiver
+&nbsp;     * @return the shared private key
+&nbsp;     * @throws Exception when the Diffie-Hellman algorithm fails
+&nbsp;     */
+&nbsp;    private BigInteger agreeOnSharedSecret(PublicKey serverPublicRSAKey) throws Exception {
+&nbsp;        // Generates a private key
+<b class="fc">&nbsp;        BigInteger privateDHKey = DiffieHellman.generatePrivateKey();</b>
+&nbsp;        //Generates a public key based on the private key
+<b class="fc">&nbsp;        BigInteger publicDHKey = DiffieHellman.generatePublicKey(privateDHKey);</b>
+&nbsp;        // Sends the public key to the server encrypted
+<b class="fc">&nbsp;        sendPublicDHKey(Encryption.encryptRSA(publicDHKey.toByteArray(), privateRSAKey));</b>
+&nbsp;        // Waits for the server to send his public key
+<b class="fc">&nbsp;        BigInteger serverPublicKey = new BigInteger(Encryption.decryptRSA((byte[]) in.readObject(), serverPublicRSAKey));</b>
+&nbsp;        // Generates the shared secret
+<b class="fc">&nbsp;        return DiffieHellman.computePrivateKey(serverPublicKey, privateDHKey);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Executes the key distribution protocol. The sender sends its public key to the receiver and receives the public
+&nbsp;     * key of the receiver.
+&nbsp;     *
+&nbsp;     * @return the public key of the sender
+&nbsp;     * @throws Exception when the key distribution protocol fails
+&nbsp;     */
+&nbsp;    private PublicKey rsaKeyDistribution() throws Exception {
+&nbsp;        // Sends the public key
+<b class="fc">&nbsp;        sendPublicRSAKey();</b>
+&nbsp;        // Receive the public key of the sender
+<b class="fc">&nbsp;        return (PublicKey) in.readObject();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Sends the public key to the receiver.
+&nbsp;     *
+&nbsp;     * @param publicKey the public key to send
+&nbsp;     * @throws Exception when the public key cannot be sent
+&nbsp;     */
+&nbsp;    private void sendPublicDHKey(byte[] publicKey) throws Exception {
+<b class="fc">&nbsp;        out.writeObject(publicKey);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Sends the public key of the sender to the receiver.
+&nbsp;     *
+&nbsp;     * @throws IOException when an I/O error occurs when sending the public key
+&nbsp;     */
+&nbsp;    private void sendPublicRSAKey() throws IOException {
+<b class="fc">&nbsp;        out.writeObject(publicRSAKey);</b>
+<b class="fc">&nbsp;        out.flush();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Executes the client. It reads the file from the console and sends it to the server. It waits for the response and
+&nbsp;     * writes the file to the {@link Client} directory.
+&nbsp;     * Also sends the clients name to the server
+&nbsp;     * Enters a cycle does only ends when the client disconnect
+&nbsp;     * After 5 request renews the handshake with the server
+&nbsp;     * @throws Exception
+&nbsp;     */
+&nbsp;    public void execute() throws Exception {
+<b class="nc">&nbsp;        Scanner usrInput = new Scanner(System.in);</b>
+&nbsp;        try {
+<b class="nc">&nbsp;            String clientName = &quot;NAME&quot; + &quot; : &quot; + this.name;</b>
+<b class="nc">&nbsp;            greeting(clientName);</b>
+<b class="nc">&nbsp;            if (clientExists) {</b>
+<b class="nc">&nbsp;                System.out.println(&quot;*** Welcome again, &quot; + this.name + &quot;! ***&quot;);</b>
+<b class="nc">&nbsp;                System.out.println(&quot;Number of Requests Remaining: &quot; + (MAX_NUM_OF_REQUESTS - this.numOfRequests));</b>
+&nbsp;            } else {
+<b class="nc">&nbsp;                System.out.println(&quot;*** Welcome, &quot; + this.name + &quot;! ***\n You are now able to enjoy file storage.&quot;);</b>
+&nbsp;            }
+<b class="nc">&nbsp;            while (isConnected) {</b>
+<b class="nc">&nbsp;                if (this.numOfRequests &lt; MAX_NUM_OF_REQUESTS) {</b>
+&nbsp;                    // Reads the message to extract the path of the file
+<b class="nc">&nbsp;                    System.out.println(&quot;**********************************************************&quot;);</b>
+<b class="nc">&nbsp;                    System.out.println(&quot;***            Write the path of the file              ***&quot;);</b>
+<b class="nc">&nbsp;                    System.out.println(&quot;*** With the following format: GET : nameOfTheFile.txt ***&quot;);</b>
+<b class="nc">&nbsp;                    System.out.println(&quot;**********************************************************\n&quot;);</b>
+<b class="nc">&nbsp;                    String request = usrInput.nextLine();</b>
+&nbsp;                    // Request the file
+<b class="nc">&nbsp;                    sendMessage(request);</b>
+&nbsp;                    // Waits for the response
+<b class="nc">&nbsp;                    processResponse(RequestUtils.getFileNameFromRequest(request), in);</b>
+&nbsp;
+<b class="nc">&nbsp;                } else {</b>
+&nbsp;
+<b class="nc">&nbsp;                    System.out.println(&quot;****************************************&quot;);</b>
+<b class="nc">&nbsp;                    System.out.println(&quot;***      Renewing the Handshake      ***&quot;);</b>
+<b class="nc">&nbsp;                    System.out.println(&quot;****************************************\n&quot;);</b>
+<b class="nc">&nbsp;                    renewHandshake(&quot;User&quot;, &quot;User&quot;);</b>
+<b class="nc">&nbsp;                    this.macKey = generateMacKey();</b>
+<b class="nc">&nbsp;                    sendMacKey();</b>
+&nbsp;
+<b class="nc">&nbsp;                    this.numOfRequests = 0;</b>
+<b class="nc">&nbsp;                    System.out.println(&quot;**********************************************************&quot;);</b>
+<b class="nc">&nbsp;                    System.out.println(&quot;***            Write the path of the file              ***&quot;);</b>
+<b class="nc">&nbsp;                    System.out.println(&quot;*** With the following format: GET : nameOfTheFile.txt ***&quot;);</b>
+<b class="nc">&nbsp;                    System.out.println(&quot;**********************************************************\n&quot;);</b>
+<b class="nc">&nbsp;                    String request = usrInput.nextLine();</b>
+&nbsp;                    // Request the file
+<b class="nc">&nbsp;                    sendMessage(request);</b>
+&nbsp;                    //waits for the server response
+<b class="nc">&nbsp;                    processResponse(RequestUtils.getFileNameFromRequest(request), in);</b>
+<b class="nc">&nbsp;                }</b>
+&nbsp;            }
+&nbsp;            // Close connection
+<b class="nc">&nbsp;            closeConnection(2);</b>
+<b class="nc">&nbsp;        } catch (Exception e) {</b>
+<b class="nc">&nbsp;            throw new RuntimeException(e);</b>
+<b class="nc">&nbsp;        }</b>
+&nbsp;        // Close connection
+<b class="nc">&nbsp;        closeConnection(2);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Renews the Handshake after 5 requests to the server
+&nbsp;     * Asking the user which algorithms he wants to use and renews all the keys used
+&nbsp;     * @throws Exception
+&nbsp;     */
+&nbsp;    public void renewHandshake(String wayToChooseSymmetric, String wayToChooseHashing) throws Exception {
+&nbsp;
+<b class="fc">&nbsp;        if (wayToChooseSymmetric.equals(&quot;User&quot;)) {</b>
+<b class="nc">&nbsp;            this.symmetricAlgorithm = menuSymmetricAlgorithm();</b>
+<b class="nc">&nbsp;            out.writeUTF(this.symmetricAlgorithm);</b>
+<b class="nc">&nbsp;            out.flush();</b>
+<b class="nc">&nbsp;            System.out.println(&quot;Sent to server the selected algorithm: &quot; + this.symmetricAlgorithm);</b>
+&nbsp;
+<b class="nc">&nbsp;            this.hashingAlgorithm = menuHashingAlgorithm();</b>
+<b class="nc">&nbsp;            out.writeUTF(this.hashingAlgorithm);</b>
+<b class="nc">&nbsp;            out.flush();</b>
+<b class="nc">&nbsp;            System.out.println(&quot;Sent to server the selected algorithm: &quot; + this.hashingAlgorithm);</b>
+&nbsp;        } else {
+<b class="fc">&nbsp;            this.symmetricAlgorithm = wayToChooseSymmetric;</b>
+<b class="fc">&nbsp;            out.writeUTF(this.symmetricAlgorithm);</b>
+<b class="fc">&nbsp;            out.flush();</b>
+<b class="fc">&nbsp;            this.hashingAlgorithm = wayToChooseHashing;</b>
+<b class="fc">&nbsp;            out.writeUTF(this.hashingAlgorithm);</b>
+<b class="fc">&nbsp;            out.flush();</b>
+&nbsp;        }
+&nbsp;
+<b class="fc">&nbsp;        String response = in.readUTF();</b>
+<b class="fc">&nbsp;        if (response.equals(&quot;The selected Algorithm is not supported by this server!&quot;)) {</b>
+<b class="nc">&nbsp;            System.out.println(&quot;**********************************************************************&quot;);</b>
+<b class="nc">&nbsp;            System.out.println(&quot;*** Error: The selected Algorithm is not supported by this server! ***&quot;);</b>
+<b class="nc">&nbsp;            System.out.println(&quot;***              You are now going to be disconnected!             ***&quot;);</b>
+<b class="nc">&nbsp;            System.out.println(&quot;**********************************************************************&quot;);</b>
+<b class="nc">&nbsp;            closeConnection(1);</b>
+&nbsp;        } else {
+<b class="fc">&nbsp;            System.out.println(&quot;*** &quot; + response + &quot; ***&quot;);</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        //generate keys
+<b class="fc">&nbsp;        KeyPair keyPair = Encryption.generateKeyPair();</b>
+&nbsp;        //set client private key
+<b class="fc">&nbsp;        this.privateRSAKey = keyPair.getPrivate();</b>
+&nbsp;        //set client public key
+<b class="fc">&nbsp;        this.publicRSAKey = keyPair.getPublic();</b>
+&nbsp;        // Performs the RSA key distribution
+<b class="fc">&nbsp;        serverPublicRSAKey = rsaKeyDistribution();</b>
+<b class="fc">&nbsp;        this.sharedSecret = agreeOnSharedSecret(serverPublicRSAKey);</b>
+<b class="fc">&nbsp;        System.out.println(&quot;****************************************&quot;);</b>
+<b class="fc">&nbsp;        System.out.println(&quot;***        Handshake Renewed!        ***&quot;);</b>
+<b class="fc">&nbsp;        System.out.println(&quot;****************************************\n&quot;);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Reads the response from the server, decrypts it, and writes the file to the Client directory.
+&nbsp;     *
+&nbsp;     * @param fileName the name of the file to write
+&nbsp;     * @param in the input stream from which to read the response
+&nbsp;     * @return the decrypted message for testing purposes
+&nbsp;     * * @throws Exception if an error occurs while reading the response or writing the file
+&nbsp;     */
+&nbsp;    public byte[] processResponse(String fileName, ObjectInputStream in) throws Exception {
+&nbsp;        try {
+<b class="fc">&nbsp;            System.out.println(&quot;File received...&quot;);</b>
+&nbsp;            // Reads the encrypted message from the server
+<b class="fc">&nbsp;            Message response = (Message) in.readObject();</b>
+&nbsp;            // Decrypts the message using the shared secret key
+<b class="fc">&nbsp;            byte[] decryptedMessage = Encryption.decryptMessage(response.getMessage(), sharedSecret.toByteArray(),</b>
+&nbsp;                    this.symmetricAlgorithm);
+&nbsp;            // Verifies the integrity of the decrypted message using the signature
+<b class="fc">&nbsp;            byte[] computedMac = Integrity.generateDigest(decryptedMessage, this.macKey,</b>
+&nbsp;                    this.hashingAlgorithm);
+<b class="fc">&nbsp;            if (!Integrity.verifyDigest(response.getSignature(), computedMac)) {</b>
+<b class="nc">&nbsp;                throw new RuntimeException(&quot;The message has been tampered with!&quot;);</b>
+&nbsp;            }
+&nbsp;            //Writes the decrypted message to the console
+<b class="fc">&nbsp;            System.out.println(&quot;Decrypted Message: &quot; + new String(decryptedMessage) + &quot;\n&quot;);</b>
+&nbsp;            // Check if the decrypted message starts with &quot;ERROR&quot;
+<b class="fc">&nbsp;            if (new String(decryptedMessage).startsWith(&quot;ERROR&quot;)) {</b>
+&nbsp;                // Print an error message
+<b class="fc">&nbsp;                System.out.println(&quot;*****************************************************************************************&quot;);</b>
+<b class="fc">&nbsp;                System.out.println(&quot;***                 Error: the file you requested does not exist!                     ***&quot;);</b>
+<b class="fc">&nbsp;                System.out.println(&quot;***      Your number of allowed requests before handshake renew decreased by one      ***&quot;);</b>
+<b class="fc">&nbsp;                System.out.println(&quot;***                               Choose another one!                                 ***&quot;);</b>
+<b class="fc">&nbsp;                System.out.println(&quot;*****************************************************************************************&quot;);</b>
+&nbsp;            } else {
+&nbsp;                // Writes the decrypted message to the file
+<b class="fc">&nbsp;                FileHandler.writeFile(this.name + &quot;/files/&quot; + fileName, new String(decryptedMessage).getBytes());</b>
+&nbsp;            }
+<b class="fc">&nbsp;            return decryptedMessage;//Returns for testing purposes</b>
+<b class="nc">&nbsp;        } catch (StreamCorruptedException e) {</b>
+<b class="nc">&nbsp;            e.printStackTrace();</b>
+&nbsp;        }
+<b class="nc">&nbsp;        return new byte[0];</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Responsible for letting the server know the clients name
+&nbsp;     *
+&nbsp;     * @param name - name of the client
+&nbsp;     *
+&nbsp;     * @throws Exception if an error occurs while sending the message
+&nbsp;     */
+&nbsp;    public void greeting(String name) throws Exception {
+&nbsp;        // Encrypts the message
+<b class="nc">&nbsp;        byte[] encryptedMessage = Encryption.encryptMessage(name.getBytes(), sharedSecret.toByteArray(),</b>
+&nbsp;                this.symmetricAlgorithm);
+&nbsp;        // Generates the MAC
+<b class="nc">&nbsp;        byte[] digest = Integrity.generateDigest(name.getBytes(), this.macKey,</b>
+&nbsp;                this.hashingAlgorithm);
+&nbsp;        // Creates the message object
+<b class="nc">&nbsp;        Message messageObj = new Message(encryptedMessage, digest);</b>
+&nbsp;        // Sends the message
+<b class="nc">&nbsp;        out.writeUnshared(messageObj);</b>
+<b class="nc">&nbsp;        out.flush();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Sends the path of the file to the server using the OutputStream of the socket. The message is sent as an object
+&nbsp;     * of the {@link Message} class.
+&nbsp;     *
+&nbsp;     * @param filePath the message to send
+&nbsp;     * @throws IOException when an I/O error occurs when sending the message
+&nbsp;     */
+&nbsp;    public Message sendMessage(String filePath) throws Exception {
+<b class="fc">&nbsp;        this.numOfRequests++;</b>
+&nbsp;        // Encrypts the message
+<b class="fc">&nbsp;        byte[] encryptedMessage = Encryption.encryptMessage(filePath.getBytes(), sharedSecret.toByteArray(),</b>
+&nbsp;                this.symmetricAlgorithm);
+&nbsp;        // Generates the MAC
+<b class="fc">&nbsp;        byte[] digest = Integrity.generateDigest(filePath.getBytes(), this.macKey,</b>
+&nbsp;                this.hashingAlgorithm);
+&nbsp;        // Creates the message object
+<b class="fc">&nbsp;        Message messageObj = new Message(encryptedMessage, digest);</b>
+&nbsp;        // Sends the message
+<b class="fc">&nbsp;        out.writeUnshared(messageObj);</b>
+<b class="fc">&nbsp;        out.flush();</b>
+<b class="fc">&nbsp;        return messageObj;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Selecting alternative options of symetric algorythm
+&nbsp;     *
+&nbsp;     * @return the selected algorithm for symmetric encryption
+&nbsp;     */
+&nbsp;    public String menuSymmetricAlgorithm() {
+&nbsp;        int option;
+&nbsp;        do {
+<b class="nc">&nbsp;            System.out.println(&quot;*************************************************************&quot;);</b>
+<b class="nc">&nbsp;            System.out.println(&quot;***           Encryption Symmetric Algorithm              ***&quot;);</b>
+<b class="nc">&nbsp;            System.out.println(&quot;*** (1)-AES256; (2)-DES; (3)-3DES; (4)-RC4(Not supported) ***&quot;);</b>
+<b class="nc">&nbsp;            System.out.println(&quot;*************************************************************&quot;);</b>
+<b class="nc">&nbsp;            option = input.nextInt();</b>
+&nbsp;
+<b class="nc">&nbsp;            switch (option) {</b>
+&nbsp;                case 1:
+<b class="nc">&nbsp;                    this.symmetricAlgorithm = &quot;AES&quot;;</b>
+&nbsp;                    //symmetricKey = 256;
+<b class="nc">&nbsp;                    System.out.println(&quot;Implementing AES, key size 256 ...&quot;);</b>
+<b class="nc">&nbsp;                    break;</b>
+&nbsp;                case 2:
+<b class="nc">&nbsp;                    this.symmetricAlgorithm = &quot;DES&quot;;</b>
+&nbsp;                    //symmetricKey = 64;
+<b class="nc">&nbsp;                    System.out.println(&quot;Implementing DES, key size 56(64) ...&quot;);</b>
+<b class="nc">&nbsp;                    break;</b>
+&nbsp;                case 3:
+<b class="nc">&nbsp;                    this.symmetricAlgorithm = &quot;DESede&quot;;</b>
+&nbsp;                    //symmetricKey = 192;
+<b class="nc">&nbsp;                    System.out.println(&quot;Implementing 3DES, key size 168 ...&quot;);</b>
+<b class="nc">&nbsp;                    break;</b>
+&nbsp;                case 4:
+<b class="nc">&nbsp;                    this.symmetricAlgorithm = &quot;RC4&quot;;</b>
+<b class="nc">&nbsp;                    System.out.println(&quot;Trying to implement RC4 ...&quot;);</b>
+&nbsp;                    break;
+&nbsp;            }
+<b class="nc">&nbsp;        } while (option &lt; 1 &amp;&amp; option &gt; 4);</b>
+&nbsp;
+<b class="nc">&nbsp;        return this.symmetricAlgorithm;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Selecting alternative options of hashing algorythm
+&nbsp;     *
+&nbsp;     * @return The hashing algorithm selected
+&nbsp;     */
+&nbsp;    public String menuHashingAlgorithm() {
+&nbsp;        int option;
+&nbsp;        do {
+<b class="nc">&nbsp;            System.out.println(&quot;*****************************************************************&quot;);</b>
+<b class="nc">&nbsp;            System.out.println(&quot;***                    Hashing Algorithm                      ***&quot;);</b>
+<b class="nc">&nbsp;            System.out.println(&quot;*** (1)-MD5; (2)-SHA256; (3)-SHA512; (4)Blake2(Not Supported) ***&quot;);</b>
+<b class="nc">&nbsp;            System.out.println(&quot;*****************************************************************&quot;);</b>
+<b class="nc">&nbsp;            option = input.nextInt();</b>
+&nbsp;
+<b class="nc">&nbsp;            switch (option) {</b>
+&nbsp;                case 1:
+<b class="nc">&nbsp;                    this.hashingAlgorithm = &quot;HmacMD5&quot;;</b>
+<b class="nc">&nbsp;                    System.out.println(&quot;Implementing MD5, key size 128...&quot;);</b>
+<b class="nc">&nbsp;                    break;</b>
+&nbsp;                case 2:
+<b class="nc">&nbsp;                    this.hashingAlgorithm = &quot;HmacSHA256&quot;;</b>
+<b class="nc">&nbsp;                    System.out.println(&quot;Implementing SHA-3, key size 256...&quot;);</b>
+<b class="nc">&nbsp;                    break;</b>
+&nbsp;                case 3:
+<b class="nc">&nbsp;                    this.hashingAlgorithm = &quot;HmacSHA512&quot;;</b>
+<b class="nc">&nbsp;                    System.out.println(&quot;Implementing SHA-3, key size 512...&quot;);</b>
+<b class="nc">&nbsp;                    break;</b>
+&nbsp;                case 4:
+<b class="nc">&nbsp;                    this.hashingAlgorithm = &quot;Blake2&quot;;</b>
+<b class="nc">&nbsp;                    System.out.println(&quot;Trying to implement Blake2...&quot;);</b>
+&nbsp;                    break;
+&nbsp;            }
+<b class="nc">&nbsp;        } while (option &lt; 1 &amp;&amp; option &gt; 4);</b>
+<b class="nc">&nbsp;        return this.hashingAlgorithm;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public String getSymmetricAlgorithm() {
+<b class="fc">&nbsp;        return symmetricAlgorithm;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public String getHashingAlgorithm() {
+<b class="fc">&nbsp;        return hashingAlgorithm;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * @param type {@value = 1} mainly used for testing purposes soo that its possible to
+&nbsp;     * catch the error and prove that the user selected a wrong choice.
+&nbsp;     * Closes the connection by closing the socket, the streams and sets isConnected to false
+&nbsp;     * soo that the cycles ends.
+&nbsp;     */
+&nbsp;    private void closeConnection(int type) {
+&nbsp;        try {
+<b class="fc">&nbsp;            this.isConnected = false;</b>
+<b class="fc">&nbsp;            client.close();</b>
+<b class="fc">&nbsp;            out.close();</b>
+<b class="fc">&nbsp;            in.close();</b>
+<b class="fc">&nbsp;            if (type == 1) {</b>
+<b class="fc">&nbsp;                throw new IllegalArgumentException(&quot;Invalid choice&quot;);</b>
+&nbsp;            } else {
+<b class="nc">&nbsp;                System.exit(0);</b>
+&nbsp;            }
+<b class="nc">&nbsp;        } catch (IOException e) {</b>
+<b class="nc">&nbsp;            throw new RuntimeException(e);</b>
+<b class="nc">&nbsp;        }</b>
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2023-05-10 20:54</div>
+</div>
+</body>
+</html>
