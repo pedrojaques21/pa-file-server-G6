@@ -1,4 +1,8 @@
 import java.util.Scanner;
+
+/**
+ * Class that represents the clients and contains the main method
+ */
 public class MainClient {
 
     public static void main ( String[] args ) throws Exception {

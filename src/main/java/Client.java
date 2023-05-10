@@ -119,6 +119,14 @@ public class Client {
         return in;
     }
 
+    public byte[] getMacKey() {
+        return macKey;
+    }
+
+    public void setMacKey(byte[] macKey) {
+        this.macKey = macKey;
+    }
+
     /**
      * Realizes the Diffie-Hellman key distribution protocol to agree on a shared private key.
      *
@@ -189,12 +197,24 @@ public class Client {
 
         this.sharedSecret = agreeOnSharedSecret(serverPublicRSAKey);
     }
+
+    /**
+     * This function is responsible to generate for each client a unique MacKey
+     * Inside the function it receives the choosen hashing algorithm and encodes de key
+     * @return the encoded key
+     * @throws NoSuchAlgorithmException if the hashing algorithm does not exist
+     */
     private byte[] generateMacKey() throws NoSuchAlgorithmException {
         KeyGenerator keyGen = KeyGenerator.getInstance(this.hashingAlgorithm);
         SecretKey secretKey = keyGen.generateKey();
         return secretKey.getEncoded();
     }
 
+    /**
+     * This method is responsible for sending the generated key to the {@link ClientHandler}
+     * The key is sent in a encrypted way using the chosen symmetric algorithm and the shared secret
+     * @throws Exception
+     */
     private void sendMacKey() throws Exception {
         byte[] encryptedMessage = Encryption.encryptMessage(this.macKey, sharedSecret.toByteArray(),this.symmetricAlgorithm);
         out.writeObject(encryptedMessage);
@@ -263,7 +283,11 @@ public class Client {
 
     /**
      * Executes the client. It reads the file from the console and sends it to the server. It waits for the response and
-     * writes the file to the temporary directory.
+     * writes the file to the {@link Client} directory.
+     * Also sends the clients name to the server
+     * Enters a cycle does only ends when the client disconnect
+     * After 5 request renews the handshake with the server
+     * @throws Exception
      */
     public void execute() {
         Scanner usrInput = new Scanner(System.in);
@@ -322,8 +346,8 @@ public class Client {
 
     /**
      * Renews the Handshake after 5 requests to the server
-     *
-     * @throws Exception when the handshake fails to renew
+     * Asking the user which algorithms he wants to use and renews all the keys used
+     * @throws Exception
      */
 
     public void renewHandshake(String wayToChooseSymmetric, String wayToChooseHashing) throws Exception {
@@ -373,12 +397,12 @@ public class Client {
     }
 
     /**
-     * Reads the response from the server, decrypts it, and writes the file to the temporary directory.
+     * Reads the response from the server, decrypts it, and writes the file to the Client directory.
      *
      * @param fileName the name of the file to write
      * @param in the input stream from which to read the response
-     *
-     * @throws Exception if an error occurs while reading the response or writing the file
+     * @return the decrypted message for testing purposes
+     * * @throws Exception if an error occurs while reading the response or writing the file
      */
     public byte[] processResponse(String fileName, ObjectInputStream in) throws Exception {
         try {
@@ -561,7 +585,10 @@ public class Client {
     }
 
     /**
-     * Closes the connection by closing the socket and the streams.
+     * @param type {@value = 1} mainly used for testing purposes soo that its possible to
+     * catch the error and prove that the user selected a wrong choice.
+     * Closes the connection by closing the socket, the streams and sets isConnected to false
+     * soo that the cycles ends.
      */
     private void closeConnection(int type) {
         try {

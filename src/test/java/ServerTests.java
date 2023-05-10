@@ -120,9 +120,9 @@ public class ServerTests {
     }
 
     @Test
-    @DisplayName("Checking if changing the Mac key returns an error")
-    public void changingHashKey() {
-        Assertions.assertThrows(javax.crypto.BadPaddingException.class, () -> {
+    @DisplayName("Checking if changing the sharedSecret key returns an error")
+    public void changingSecretKey() throws Exception{
+        assertThrows(javax.crypto.BadPaddingException.class, () -> {
             String request = "GET : hello.txt";
             client.sendMessage(request);
             Message response = (Message) client.getIn().readObject();
@@ -139,6 +139,27 @@ public class ServerTests {
 
     }
 
+
+    @Test
+    @DisplayName("Checking if changing the Hashing key returns an error")
+    public void changingHashingKey() throws Exception{
+        assertThrows(java.io.EOFException.class, () -> {
+            String request = "GET : hello.txt";
+            byte[] macKey = client.getMacKey();
+            byte[] modifiedSecretKey = macKey;
+
+            for (int i = 0; i < macKey.length; i++) {
+                // Add 10 to each byte value, ensuring it stays within the valid range (-128 to 127)
+                int modifiedByte = (macKey[i] + 10) % 256;
+                modifiedSecretKey[i] = (byte) modifiedByte;
+            }
+            client.setMacKey(modifiedSecretKey);
+            client.sendMessage(request);
+            Message response = (Message) client.getIn().readObject();
+        });
+
+    }
+
     @Test
     @DisplayName("Check if multiple clients have different handshake values")
     public void differentHandshakeValues() throws Exception {
@@ -148,7 +169,7 @@ public class ServerTests {
         client1.sendMessage(requestFile);
         Client client2 = new Client(8000, "Jared", "AES", "HmacSHA256");
         client2.sendMessage(requestFile);
-        Assertions.assertAll(
+        assertAll(
                 () -> assertNotEquals(client.getSharedSecret(), client1.getSharedSecret()),
                 () -> assertNotEquals(client.getSharedSecret(), client2.getSharedSecret()),
                 () -> assertNotEquals(client1.getSharedSecret(), client2.getSharedSecret())
@@ -166,9 +187,9 @@ public class ServerTests {
         byte[] message2 = client1.processResponse(requestFile1, client1.getIn());
         String stringMessage1 = new String(message1);
         String stringMessage2 = new String(message2);
-        Assertions.assertAll(
-                () -> Assertions.assertNotNull(stringMessage1),
-                () -> Assertions.assertNotNull(stringMessage2),
+        assertAll(
+                () -> assertNotNull(stringMessage1),
+                () -> assertNotNull(stringMessage2),
                 () -> assertEquals(stringMessage1, stringMessage2)
         );
     }
@@ -185,9 +206,9 @@ public class ServerTests {
         byte[] message2 = client1.processResponse(requestFile2, client1.getIn());
         String stringMessage1 = new String(message1);
         String stringMessage2 = new String(message2);
-        Assertions.assertAll(
-                () -> Assertions.assertNotNull(stringMessage1),
-                () -> Assertions.assertNotNull(stringMessage2),
+        assertAll(
+                () -> assertNotNull(stringMessage1),
+                () -> assertNotNull(stringMessage2),
                 () -> assertNotEquals(stringMessage1, stringMessage2)
         );
     }
@@ -210,7 +231,7 @@ public class ServerTests {
         client.processResponse(request, client.getIn());
         client.renewHandshake("AES", "HmacSHA256");
         String shareSecretAfterRenewHandShake = String.valueOf(client.getSharedSecret());
-        Assertions.assertAll(
+        assertAll(
                 () -> assertNotEquals(shareSecretAfterRenewHandShake, sharedSecretBeforeRenewHandShake),
                 () -> assertEquals(firstAlgorithmUsed, client.getSymmetricAlgorithm())
         );
@@ -235,7 +256,7 @@ public class ServerTests {
         client.processResponse(request, client.getIn());
         client.renewHandshake("DES", "HmacSHA256");
         String shareSecretAfterRenewHandShake = String.valueOf(client.getSharedSecret());
-        Assertions.assertAll(
+        assertAll(
                 () -> assertNotEquals(shareSecretAfterRenewHandShake, sharedSecretBeforeRenewHandShake),
                 () -> assertNotEquals(firstAlgorithmUsed, client.getSymmetricAlgorithm())
         );
@@ -259,7 +280,7 @@ public class ServerTests {
         client.processResponse(request, client.getIn());
         client.renewHandshake("AES", "HmacSHA512");
         String shareSecretAfterRenewHandShake = String.valueOf(client.getSharedSecret());
-        Assertions.assertAll(
+        assertAll(
                 () -> assertNotEquals(shareSecretAfterRenewHandShake, sharedSecretBeforeRenewHandShake),
                 () -> assertNotEquals(firstAlgorithmUsed, client.getHashingAlgorithm())
         );
@@ -268,8 +289,7 @@ public class ServerTests {
     @Test
     @DisplayName("Check if long files are sent correctly")
     public void testLongFiles() throws Exception {
-        String pathName = client.getName() + "/files/cleancode.txt";
-        File myObj = new File(pathName);
+        File myObj = new File("server/files/cleancode.txt");
         Scanner myReader = new Scanner(myObj);
         StringBuilder data = new StringBuilder();
         while (myReader.hasNextLine()) {
@@ -287,7 +307,7 @@ public class ServerTests {
     @Test
     @DisplayName("Check if choosing non supported algorithm returns error")
     public void nonSupportedAlgorithm() {
-        IllegalArgumentException exception = Assertions.assertThrows(IllegalArgumentException.class, () -> {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Client testClient = new Client(8000,"Joe","RC4","Blake2");
             String response = testClient.getIn().readUTF();
             String errorMessage = "The selected Algorithm is not supported by this server!";
