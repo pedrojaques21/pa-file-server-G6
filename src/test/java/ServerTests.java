@@ -10,7 +10,6 @@ public class ServerTests {
     private Client client;
     private static Server server;
 
-
     @BeforeAll
     public static void startServer() throws Exception {
         server = new Server(8000);
@@ -33,10 +32,10 @@ public class ServerTests {
     public void createClient() {
         String name = "TestingClient";
         String clientName = client.getName();
-        Socket clientScoket = client.getClient();
+        Socket clientSocket = client.getClient();
         assertAll(
                 () -> assertEquals(name, clientName),
-                () -> assertTrue(clientScoket.isBound())
+                () -> assertTrue(clientSocket.isBound())
         );
     }
 
@@ -104,7 +103,7 @@ public class ServerTests {
 
     @Test
     @DisplayName("Checking if changing the sharedSecret key returns an error")
-    public void changingSecretKey() throws Exception{
+    public void changingSecretKey() {
         assertThrows(javax.crypto.BadPaddingException.class, () -> {
             String request = "GET : hello.txt";
             client.sendMessage(request);
@@ -125,7 +124,7 @@ public class ServerTests {
 
     @Test
     @DisplayName("Checking if changing the Hashing key returns an error")
-    public void changingHashingKey() throws Exception{
+    public void changingHashingKey() {
         assertThrows(java.io.EOFException.class, () -> {
             String request = "GET : hello.txt";
             byte[] macKey = client.getMacKey();
