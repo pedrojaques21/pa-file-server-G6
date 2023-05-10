@@ -468,7 +468,7 @@ public class Client {
      * @return the selected algorithm for symmetric encryption
      */
     public String menuSymmetricAlgorithm() {
-        int option;
+        int option = 0;
         do {
             System.out.println("*************************************************************");
             System.out.println("***           Encryption Symmetric Algorithm              ***");
@@ -515,7 +515,7 @@ public class Client {
      * @return The hashing algorithm selected
      */
     public String menuHashingAlgorithm() {
-        int option;
+        int option = 0;
         do {
             System.out.println("*****************************************************************");
             System.out.println("***                    Hashing Algorithm                      ***");

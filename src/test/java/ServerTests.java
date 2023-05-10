@@ -16,7 +16,6 @@ public class ServerTests {
 
     private Client client;
     private static Server server;
-    private static Thread serverThread;
 
     @BeforeAll
     public static void startServer() throws Exception{
@@ -319,7 +318,4 @@ public class ServerTests {
         String actualMessage = exception.getMessage();
         assertEquals(expectedMessage, actualMessage);
     }
-
-
-
 }
