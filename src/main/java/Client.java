@@ -36,6 +36,8 @@ public class Client {
     private final boolean clientExists;
     private final File userDirectory;
 
+    private byte[] macKey;
+
     /**
      * Constructs a Client object by specifying the port to connect to. The socket must be created before the sender can
      * send a message.
@@ -74,6 +76,8 @@ public class Client {
 
         handshake(wayToChooseSymmetric, wayToChooseHashing);
 
+        this.macKey = generateMacKey();
+        sendMacKey();
         File filesDirectory = new File(userDirectory.getAbsolutePath() + "/files");
         if (!filesDirectory.exists()) {
             filesDirectory.mkdirs();
@@ -86,6 +90,10 @@ public class Client {
 
     public Socket getClient() {
         return client;
+    }
+
+    public int getNumOfRequests() {
+        return numOfRequests;
     }
 
     public PublicKey getPublicRSAKey() {
@@ -186,6 +194,18 @@ public class Client {
 
         this.sharedSecret = agreeOnSharedSecret(serverPublicRSAKey);
     }
+    private byte[] generateMacKey() throws NoSuchAlgorithmException {
+        KeyGenerator keyGen = KeyGenerator.getInstance(this.hashingAlgorithm);
+        SecretKey secretKey = keyGen.generateKey();
+        return secretKey.getEncoded();
+    }
+
+    private void sendMacKey() throws Exception {
+        byte[] encryptedMessage = Encryption.encryptMessage(this.macKey, sharedSecret.toByteArray(),this.symmetricAlgorithm);
+        out.writeObject(encryptedMessage);
+        out.flush();
+    }
+
 
 
     /**
@@ -268,7 +288,7 @@ public class Client {
                     System.out.println("**********************************************************");
                     System.out.println("***            Write the path of the file              ***");
                     System.out.println("*** With the following format: GET : nameOfTheFile.txt ***");
-                    System.out.println("********************************************************\n");
+                    System.out.println("**********************************************************\n");
                     String request = usrInput.nextLine();
                     // Request the file
                     sendMessage(request);
@@ -281,11 +301,14 @@ public class Client {
                     System.out.println("***      Renewing the Handshake      ***");
                     System.out.println("****************************************\n");
                     renewHandshake("User", "User");
+                    this.macKey = generateMacKey();
+                    sendMacKey();
+
                     this.numOfRequests = 0;
                     System.out.println("**********************************************************");
                     System.out.println("***            Write the path of the file              ***");
                     System.out.println("*** With the following format: GET : nameOfTheFile.txt ***");
-                    System.out.println("********************************************************\n");
+                    System.out.println("**********************************************************\n");
                     String request = usrInput.nextLine();
                     // Request the file
                     sendMessage(request);
@@ -371,7 +394,7 @@ public class Client {
             byte[] decryptedMessage = Encryption.decryptMessage(response.getMessage(), sharedSecret.toByteArray(),
                     this.symmetricAlgorithm);
             // Verifies the integrity of the decrypted message using the signature
-            byte[] computedMac = Integrity.generateDigest(decryptedMessage, sharedSecret.toByteArray(),
+            byte[] computedMac = Integrity.generateDigest(decryptedMessage, this.macKey,
                     this.hashingAlgorithm);
             if (!Integrity.verifyDigest(response.getSignature(), computedMac)) {
                 throw new RuntimeException("The message has been tampered with!");
@@ -410,7 +433,7 @@ public class Client {
         byte[] encryptedMessage = Encryption.encryptMessage(name.getBytes(), sharedSecret.toByteArray(),
                 this.symmetricAlgorithm);
         // Generates the MAC
-        byte[] digest = Integrity.generateDigest(name.getBytes(), sharedSecret.toByteArray(),
+        byte[] digest = Integrity.generateDigest(name.getBytes(), this.macKey,
                 this.hashingAlgorithm);
         // Creates the message object
         Message messageObj = new Message(encryptedMessage, digest);
@@ -433,7 +456,7 @@ public class Client {
         byte[] encryptedMessage = Encryption.encryptMessage(filePath.getBytes(), sharedSecret.toByteArray(),
                 this.symmetricAlgorithm);
         // Generates the MAC
-        byte[] digest = Integrity.generateDigest(filePath.getBytes(), sharedSecret.toByteArray(),
+        byte[] digest = Integrity.generateDigest(filePath.getBytes(), this.macKey,
                 this.hashingAlgorithm);
         // Creates the message object
         Message messageObj = new Message(encryptedMessage, digest);
@@ -518,6 +541,14 @@ public class Client {
             }
         } while (option < 1 && option > 4);
         return this.hashingAlgorithm;
+    }
+
+    public String getSymmetricAlgorithm() {
+        return symmetricAlgorithm;
+    }
+
+    public String getHashingAlgorithm() {
+        return hashingAlgorithm;
     }
 
     /**

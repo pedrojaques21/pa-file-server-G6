@@ -30,6 +30,8 @@ public class ClientHandler extends Thread {
     private String hashingAlgorithm;
     private boolean isSupported;
     private boolean hashIsSupported;
+    private byte[] macKey;
+
 
     /**
      * Creates a ClientHandler object by specifying the socket to communicate with the client. All the processing is
@@ -69,7 +71,11 @@ public class ClientHandler extends Thread {
         try (OutputStream outputStream = new FileOutputStream(publicKeyFile)) {
             outputStream.write(publicRSAKey.getEncoded());
         }
+        this.macKey = receiveMacKey();
+    }
 
+    public String getClientName() {
+        return clientName;
     }
 
     /**
@@ -99,6 +105,11 @@ public class ClientHandler extends Thread {
         // Send the public key
         sendPublicRSAKey();
         return clientPublicRSAKey;
+    }
+
+    public byte[] receiveMacKey() throws Exception{
+        byte[] macKey = (byte[]) in.readObject();
+        return Encryption.decryptMessage(macKey, sharedSecret.toByteArray(), symmetricAlgorithm);
     }
 
     /**
@@ -188,6 +199,7 @@ public class ClientHandler extends Thread {
                     this.publicRSAKey = keyPair.getPublic();
                     this.senderPublicRSAKey = rsaKeyDistribution(in);
                     this.sharedSecret = agreeOnSharedSecret(senderPublicRSAKey);
+                    this.macKey = receiveMacKey();
                     System.out.println("Processing Request...");
                     byte[] content = receiveMessage();
                     sendFile(content);
@@ -246,7 +258,7 @@ public class ClientHandler extends Thread {
         byte[] decryptedMessage = Encryption.decryptMessage(messageObj.getMessage(), sharedSecret.toByteArray(),
                 symmetricAlgorithm);
         // Computes the digest of the received message
-        byte[] computedDigest = Integrity.generateDigest(decryptedMessage, sharedSecret.toByteArray(),hashingAlgorithm);
+        byte[] computedDigest = Integrity.generateDigest(decryptedMessage, this.macKey,hashingAlgorithm);
         // Verifies the integrity of the message
         if (!Integrity.verifyDigest(messageObj.getSignature(), computedDigest)) {
             throw new RuntimeException("The integrity of the message is not verified");
@@ -268,7 +280,7 @@ public class ClientHandler extends Thread {
         FileHandler.saveHashMapToTextFile(MainServer.numOfRequestsMap, MainServer.NREQUESTSMAP_PATH);
         //Sending the file to the client, before sending check if the file is too big
         byte[] encryptedMessage = Encryption.encryptMessage(content, sharedSecret.toByteArray(), symmetricAlgorithm);
-        byte[] digest = Integrity.generateDigest(content, sharedSecret.toByteArray(), hashingAlgorithm);
+        byte[] digest = Integrity.generateDigest(content, this.macKey, hashingAlgorithm);
         Message response = new Message(encryptedMessage, digest);
         out.writeObject(response);
         out.flush();
