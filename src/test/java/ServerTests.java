@@ -287,7 +287,7 @@ public class ServerTests {
     }
 
     @Test
-    @DisplayName("Check if choosing non suppoted algorithm returns error")
+    @DisplayName("Check if choosing non supported algorithm returns error")
     public void nonSupportedAlgorithm() {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Client testClient = new Client(8000,"Joe","RC4","Blake2");
