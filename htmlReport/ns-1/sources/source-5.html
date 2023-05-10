@@ -51,7 +51,7 @@ Current scope:     <a href="../../index.html">all classes</a>
 </td>
 <td class="coverageStat">
   <span class="percent">
-    57,1%
+    57.1%
   </span>
   <span class="absValue">
     (4/7)
@@ -59,7 +59,7 @@ Current scope:     <a href="../../index.html">all classes</a>
 </td>
 <td class="coverageStat">
   <span class="percent">
-    60,3%
+    60.3%
   </span>
   <span class="absValue">
     (35/58)
@@ -74,7 +74,14 @@ Current scope:     <a href="../../index.html">all classes</a>
 
 
 <pre>
-<code class="sourceCode" id="sourceCode">&nbsp;import java.io.*;
+<code class="sourceCode" id="sourceCode">&nbsp;import java.io.BufferedReader;
+&nbsp;import java.io.BufferedWriter;
+&nbsp;import java.io.File;
+&nbsp;import java.io.FileInputStream;
+&nbsp;import java.io.FileOutputStream;
+&nbsp;import java.io.FileReader;
+&nbsp;import java.io.FileWriter;
+&nbsp;import java.io.IOException;
 &nbsp;import java.nio.charset.StandardCharsets;
 &nbsp;import java.util.HashMap;
 &nbsp;import java.util.Map;
@@ -92,9 +99,8 @@ Current scope:     <a href="../../index.html">all classes</a>
 &nbsp;     *
 &nbsp;     * @return the content of the file in bytes
 &nbsp;     *
-&nbsp;     * @throws IOException when an I/O error occurs when reading the file
 &nbsp;     */
-&nbsp;    public static byte[] readFile(String path) throws IOException {
+&nbsp;    public static byte[] readFile(String path) {
 &nbsp;        try {
 <b class="fc">&nbsp;            File file = new File(path);</b>
 <b class="fc">&nbsp;            if (file.exists()) {</b>
@@ -115,7 +121,7 @@ Current scope:     <a href="../../index.html">all classes</a>
 &nbsp;    /**
 &nbsp;     * Writes a text file and returns the result in bytes
 &nbsp;     */
-&nbsp;    public static void writeFile ( String path , byte[] content ) throws IOException {
+&nbsp;    public static void writeFile ( String path , byte[] content ) {
 &nbsp;        try {
 <b class="fc">&nbsp;            File file = new File ( path );</b>
 <b class="fc">&nbsp;            FileOutputStream fileOutputStream = new FileOutputStream ( file );</b>
@@ -128,8 +134,10 @@ Current scope:     <a href="../../index.html">all classes</a>
 &nbsp;
 &nbsp;    /**
 &nbsp;     * Reads a textFile and returns an HashMap
-&nbsp;     * @param requestsFilePath
-&nbsp;     * @return
+&nbsp;     *
+&nbsp;     * @param requestsFilePath the path of the file to read
+&nbsp;     *
+&nbsp;     * @return the content of the file in bytes
 &nbsp;     */
 &nbsp;    public static HashMap&lt;String, Integer&gt; readHashMapFromFile(String requestsFilePath) {
 <b class="fc">&nbsp;        HashMap&lt;String, Integer&gt; myHashMap = new HashMap&lt;&gt;();</b>
@@ -152,8 +160,10 @@ Current scope:     <a href="../../index.html">all classes</a>
 &nbsp;
 &nbsp;    /**
 &nbsp;     * Writes a HashMap to a textFile
-&nbsp;     * @param myHashMap
-&nbsp;     * @param filePath
+&nbsp;     *
+&nbsp;     * @param myHashMap the HashMap to write
+&nbsp;     *
+&nbsp;     * @param filePath the path of the file to write
 &nbsp;     */
 &nbsp;    public static void saveHashMapToTextFile(HashMap&lt;String, Integer&gt; myHashMap, String filePath) {
 &nbsp;        try {
@@ -171,7 +181,8 @@ Current scope:     <a href="../../index.html">all classes</a>
 &nbsp;
 &nbsp;    /**
 &nbsp;     * Check if file exists, otherwise creates a new one.
-&nbsp;     * @param filePath
+&nbsp;     *
+&nbsp;     * @param filePath the path of the file to check
 &nbsp;     */
 &nbsp;    public static void createTextFileIfNotExists(String filePath) {
 &nbsp;
@@ -190,7 +201,8 @@ Current scope:     <a href="../../index.html">all classes</a>
 &nbsp;
 &nbsp;    /**
 &nbsp;     * Prints on the console the contents of a HashMap
-&nbsp;     * @param myHashMap
+&nbsp;     *
+&nbsp;     * @param myHashMap the HashMap to print
 &nbsp;     */
 &nbsp;    public static void printHashMap(HashMap&lt;String, Integer&gt; myHashMap) {
 <b class="nc">&nbsp;        System.out.println(&quot;\t\tName\tRequests&quot;);</b>
@@ -226,7 +238,7 @@ Current scope:     <a href="../../index.html">all classes</a>
 
 <div class="footer">
     
-    <div style="float:right;">generated on 2023-05-10 20:45</div>
+    <div style="float:right;">generated on 2023-05-10 21:03</div>
 </div>
 </body>
 </html>

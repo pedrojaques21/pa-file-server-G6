@@ -59,7 +59,7 @@ Current scope:     <a href="../../index.html">all classes</a>
 </td>
 <td class="coverageStat">
   <span class="percent">
-    59,1%
+    59.1%
   </span>
   <span class="absValue">
     (13/22)
@@ -74,7 +74,7 @@ Current scope:     <a href="../../index.html">all classes</a>
 
 
 <pre>
-<code class="sourceCode" id="sourceCode">&nbsp;import java.io.*;
+<code class="sourceCode" id="sourceCode">&nbsp;import java.io.IOException;
 &nbsp;import java.math.BigInteger;
 &nbsp;import java.net.ServerSocket;
 &nbsp;import java.net.Socket;
@@ -96,18 +96,18 @@ Current scope:     <a href="../../index.html">all classes</a>
 &nbsp;     * The server will be accepting connections from all local addresses.
 &nbsp;     *
 &nbsp;     * @param port the port number
+&nbsp;     *
 &nbsp;     * @throws IOException if an I/O error occurs when opening the socket
 &nbsp;     */
 <b class="fc">&nbsp;    public Server(int port) throws Exception {</b>
 <b class="fc">&nbsp;        server = new ServerSocket(port);</b>
-<b class="fc">&nbsp;        isConnected = true; // TODO: Check if this is necessary or if it should be controlled</b>
+<b class="fc">&nbsp;        isConnected = true;</b>
 &nbsp;
 &nbsp;    }
 &nbsp;
 &nbsp;    public BigInteger getClientHandlerSharedSecret() {
 <b class="fc">&nbsp;        return clientHandlerSharedSecret;</b>
 &nbsp;    }
-&nbsp;
 &nbsp;
 &nbsp;    @Override
 &nbsp;    public void run() {
@@ -174,7 +174,7 @@ Current scope:     <a href="../../index.html">all classes</a>
 
 <div class="footer">
     
-    <div style="float:right;">generated on 2023-05-10 20:45</div>
+    <div style="float:right;">generated on 2023-05-10 21:03</div>
 </div>
 </body>
 </html>

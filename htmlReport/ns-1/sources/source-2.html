@@ -51,18 +51,18 @@ Current scope:     <a href="../../index.html">all classes</a>
 </td>
 <td class="coverageStat">
   <span class="percent">
-    94,4%
+    100%
   </span>
   <span class="absValue">
-    (17/18)
+    (17/17)
   </span>
 </td>
 <td class="coverageStat">
   <span class="percent">
-    84,9%
+    86.2%
   </span>
   <span class="absValue">
-    (124/146)
+    (125/145)
   </span>
 </td>
 </tr>
@@ -74,7 +74,12 @@ Current scope:     <a href="../../index.html">all classes</a>
 
 
 <pre>
-<code class="sourceCode" id="sourceCode">&nbsp;import java.io.*;
+<code class="sourceCode" id="sourceCode">&nbsp;import java.io.File;
+&nbsp;import java.io.FileOutputStream;
+&nbsp;import java.io.IOException;
+&nbsp;import java.io.ObjectInputStream;
+&nbsp;import java.io.ObjectOutputStream;
+&nbsp;import java.io.OutputStream;
 &nbsp;import java.math.BigInteger;
 &nbsp;import java.net.Socket;
 &nbsp;import java.security.KeyPair;
@@ -90,32 +95,23 @@ Current scope:     <a href="../../index.html">all classes</a>
 &nbsp;    private final ObjectInputStream in;
 &nbsp;    private final ObjectOutputStream out;
 &nbsp;    private final Socket client;
-&nbsp;    private boolean isConnected;
-&nbsp;
+&nbsp;    private final boolean isConnected;
 &nbsp;    private PrivateKey privateRSAKey;
 &nbsp;    private PublicKey publicRSAKey;
-&nbsp;
 &nbsp;    private PublicKey senderPublicRSAKey;
-&nbsp;
 &nbsp;    private BigInteger sharedSecret;
-&nbsp;
 &nbsp;    private String clientName;
-&nbsp;
-<b class="fc">&nbsp;    private final int MAX_NUM_OF_REQUESTS = 5;</b>
 &nbsp;    private int numOfRequests;
-&nbsp;
 &nbsp;    private String symmetricAlgorithm;
 &nbsp;    private String hashingAlgorithm;
-&nbsp;
 &nbsp;    private boolean isSupported;
 &nbsp;    private boolean hashIsSupported;
-&nbsp;
 &nbsp;    private byte[] macKey;
-&nbsp;
 &nbsp;
 &nbsp;    /**
 &nbsp;     * Creates a ClientHandler object by specifying the socket to communicate with the client. All the processing is
 &nbsp;     * done in a separate thread.
+&nbsp;     *
 &nbsp;     * @param client represents the socket connection with the client
 &nbsp;     *
 &nbsp;     * @throws IOException when an I/O error occurs when creating the socket
@@ -155,10 +151,6 @@ Current scope:     <a href="../../index.html">all classes</a>
 <b class="fc">&nbsp;        this.macKey = receiveMacKey();</b>
 &nbsp;    }
 &nbsp;
-&nbsp;    public String getClientName() {
-<b class="nc">&nbsp;        return clientName;</b>
-&nbsp;    }
-&nbsp;
 &nbsp;    /**
 &nbsp;     * Sends a success message to the client indicating that the selected algorithm is supported by the server.
 &nbsp;     *
@@ -175,7 +167,9 @@ Current scope:     <a href="../../index.html">all classes</a>
 &nbsp;     * own public key.
 &nbsp;     *
 &nbsp;     * @param in the input stream
+&nbsp;     *
 &nbsp;     * @return the public key of the sender
+&nbsp;     *
 &nbsp;     * @throws Exception when the key distribution protocol fails
 &nbsp;     */
 &nbsp;    private PublicKey rsaKeyDistribution(ObjectInputStream in) throws Exception {
@@ -188,8 +182,8 @@ Current scope:     <a href="../../index.html">all classes</a>
 &nbsp;
 &nbsp;    /**
 &nbsp;     * Reads the MacKey sent from the client soo that it can assign it to its own MacKey
+&nbsp;     *
 &nbsp;     * @return the key after decrypting it
-&nbsp;     * @throws Exception
 &nbsp;     */
 &nbsp;
 &nbsp;    public byte[] receiveMacKey() throws Exception{
@@ -201,7 +195,9 @@ Current scope:     <a href="../../index.html">all classes</a>
 &nbsp;     * Performs the Diffie-Hellman algorithm to agree on a shared private key.
 &nbsp;     *
 &nbsp;     * @param senderPublicRSAKey the public key of the sender
+&nbsp;     *
 &nbsp;     * @return the shared secret key
+&nbsp;     *
 &nbsp;     * @throws Exception when the key agreement protocol fails
 &nbsp;     */
 &nbsp;    private BigInteger agreeOnSharedSecret(PublicKey senderPublicRSAKey) throws Exception {
@@ -220,6 +216,7 @@ Current scope:     <a href="../../index.html">all classes</a>
 &nbsp;     * Sends the public key to the sender.
 &nbsp;     *
 &nbsp;     * @param publicKey the public key to be sent
+&nbsp;     *
 &nbsp;     * @throws Exception when the public key cannot be sent
 &nbsp;     */
 &nbsp;    private void sendPublicDHKey(BigInteger publicKey) throws Exception {
@@ -250,6 +247,7 @@ Current scope:     <a href="../../index.html">all classes</a>
 <b class="fc">&nbsp;        super.run ( );</b>
 &nbsp;        try {
 <b class="fc">&nbsp;            while (isConnected) {</b>
+<b class="fc">&nbsp;                int MAX_NUM_OF_REQUESTS = 5;</b>
 <b class="fc">&nbsp;                if (this.numOfRequests &lt; MAX_NUM_OF_REQUESTS) {</b>
 <b class="fc">&nbsp;                    System.out.println(&quot;Processing Request...&quot;);</b>
 <b class="fc">&nbsp;                    byte[] content = receiveMessage();</b>
@@ -289,8 +287,8 @@ Current scope:     <a href="../../index.html">all classes</a>
 <b class="nc">&nbsp;                    System.out.println(&quot;Processing Request...&quot;);</b>
 <b class="nc">&nbsp;                    byte[] content = receiveMessage();</b>
 <b class="nc">&nbsp;                    sendFile(content);</b>
-<b class="nc">&nbsp;                }</b>
-&nbsp;            }
+&nbsp;                }
+<b class="fc">&nbsp;            }</b>
 &nbsp;            // Close connection
 <b class="nc">&nbsp;            closeConnection();</b>
 <b class="fc">&nbsp;        } catch (Exception e) {</b>
@@ -304,8 +302,8 @@ Current scope:     <a href="../../index.html">all classes</a>
 &nbsp;     * Decrypts the message using the established algorithm
 &nbsp;     * If the message starts with {@value = &quot;NAME&quot;} it means the client is introducing itself
 &nbsp;     * soo it should not return a file but create a directory
+&nbsp;     *
 &nbsp;     * @return the path of the file or &quot;nothing&quot; to let the {@link ClientHandler} know to greet the client
-&nbsp;     * @throws Exception
 &nbsp;     */
 &nbsp;    private byte[] receiveMessage() throws Exception {
 <b class="fc">&nbsp;        Message messageObj = (Message) in.readObject();</b>
@@ -364,6 +362,7 @@ Current scope:     <a href="../../index.html">all classes</a>
 &nbsp;     * Sends the file to the client
 &nbsp;     *
 &nbsp;     * @param content the content of the file to send
+&nbsp;     *
 &nbsp;     * @throws IOException when an I/O error occurs when sending the file
 &nbsp;     */
 &nbsp;    private void sendFile(byte[] content) throws Exception {
@@ -382,7 +381,6 @@ Current scope:     <a href="../../index.html">all classes</a>
 &nbsp;    /**
 &nbsp;     * After checking if the received algorithm is not valid {@link ClientHandler()#verifyAlgorithmServerSupport()}
 &nbsp;     * and alerts the client and closes the connection with it
-&nbsp;     * @throws IOException
 &nbsp;     */
 &nbsp;    private void sendErrorMessage() throws IOException {
 <b class="fc">&nbsp;        out.writeUTF(&quot;The selected Algorithm is not supported by this server!&quot;);</b>
@@ -393,6 +391,7 @@ Current scope:     <a href="../../index.html">all classes</a>
 &nbsp;
 &nbsp;    /**
 &nbsp;     * Receive the symmetric algorithm selected by the client, and verify if the server support them
+&nbsp;     *
 &nbsp;     * @return boolean {@value = true if algorithm is available}
 &nbsp;     */
 &nbsp;    private boolean verifyAlgorithmServerSupport(String receivedAlgorithm) {
@@ -417,8 +416,11 @@ Current scope:     <a href="../../index.html">all classes</a>
 &nbsp;    }
 &nbsp;
 &nbsp;    /**
-&nbsp;     * Receive the hashing algorithm selected by the client, and verify if the server support them
-&nbsp;     * @return boolean {@value = true if algorithm is available}
+&nbsp;     * Verifies if the algorithm received from the client is supported by the server.
+&nbsp;     *
+&nbsp;     * @param receivedAlgorithm the algorithm received from the client
+&nbsp;     *
+&nbsp;     * @return true if the algorithm is supported by the server, false otherwise
 &nbsp;     */
 &nbsp;    private boolean verifyHashAlgorithmServerSupport(String receivedAlgorithm) {
 <b class="fc">&nbsp;        String[] availableAlgorithms = {&quot;HmacMD5&quot;, &quot;HmacSHA256&quot;,&quot;HmacSHA512&quot;};</b>
@@ -440,8 +442,6 @@ Current scope:     <a href="../../index.html">all classes</a>
 &nbsp;
 <b class="fc">&nbsp;        return isAlgorithmAvailable;</b>
 &nbsp;    }
-&nbsp;
-&nbsp;
 &nbsp;
 &nbsp;    /**
 &nbsp;     * Closes the connection by closing the socket and the streams.
@@ -480,7 +480,7 @@ Current scope:     <a href="../../index.html">all classes</a>
 
 <div class="footer">
     
-    <div style="float:right;">generated on 2023-05-10 20:45</div>
+    <div style="float:right;">generated on 2023-05-10 21:03</div>
 </div>
 </body>
 </html>

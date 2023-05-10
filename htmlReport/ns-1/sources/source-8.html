@@ -51,7 +51,7 @@ Current scope:     <a href="../../index.html">all classes</a>
 </td>
 <td class="coverageStat">
   <span class="percent">
-    33,3%
+    33.3%
   </span>
   <span class="absValue">
     (1/3)
@@ -59,10 +59,10 @@ Current scope:     <a href="../../index.html">all classes</a>
 </td>
 <td class="coverageStat">
   <span class="percent">
-    11,1%
+    11.8%
   </span>
   <span class="absValue">
-    (2/18)
+    (2/17)
   </span>
 </td>
 </tr>
@@ -74,8 +74,7 @@ Current scope:     <a href="../../index.html">all classes</a>
 
 
 <pre>
-<code class="sourceCode" id="sourceCode">&nbsp;import java.io.IOException;
-&nbsp;import java.util.HashMap;
+<code class="sourceCode" id="sourceCode">&nbsp;import java.util.HashMap;
 &nbsp;import java.util.Scanner;
 &nbsp;
 &nbsp;/**
@@ -86,8 +85,7 @@ Current scope:     <a href="../../index.html">all classes</a>
 &nbsp;
 &nbsp;    public static final String NREQUESTSMAP_PATH = &quot;server/numOfRequestsMap.txt&quot;;
 <b class="fc">&nbsp;    public static HashMap&lt;String, Integer&gt; numOfRequestsMap = new HashMap&lt;&gt;();</b>
-&nbsp;
-<b class="fc">&nbsp;    private static Scanner scanner = new Scanner(System.in);</b>
+<b class="fc">&nbsp;    private static final Scanner scanner = new Scanner(System.in);</b>
 &nbsp;
 &nbsp;    public static void main ( String[] args ) throws Exception {
 &nbsp;
@@ -100,7 +98,7 @@ Current scope:     <a href="../../index.html">all classes</a>
 <b class="nc">&nbsp;        Thread serverThread = new Thread ( server );</b>
 <b class="nc">&nbsp;        serverThread.start ( );</b>
 &nbsp;
-<b class="nc">&nbsp;        String stop = &quot;&quot;;</b>
+&nbsp;        String stop;
 &nbsp;        do {
 <b class="nc">&nbsp;            stop = scanner.nextLine();</b>
 <b class="nc">&nbsp;        } while (!stop.equals(&quot;s&quot;));</b>
@@ -112,7 +110,6 @@ Current scope:     <a href="../../index.html">all classes</a>
 <b class="nc">&nbsp;        System.exit(0);</b>
 &nbsp;
 &nbsp;    }
-&nbsp;
 &nbsp;
 &nbsp;}
 </code>
@@ -138,7 +135,7 @@ Current scope:     <a href="../../index.html">all classes</a>
 
 <div class="footer">
     
-    <div style="float:right;">generated on 2023-05-10 20:45</div>
+    <div style="float:right;">generated on 2023-05-10 21:03</div>
 </div>
 </body>
 </html>

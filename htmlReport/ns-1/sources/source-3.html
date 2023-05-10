@@ -59,7 +59,7 @@ Current scope:     <a href="../../index.html">all classes</a>
 </td>
 <td class="coverageStat">
   <span class="percent">
-    85,7%
+    85.7%
   </span>
   <span class="absValue">
     (6/7)
@@ -79,22 +79,47 @@ Current scope:     <a href="../../index.html">all classes</a>
 &nbsp;import java.security.SecureRandom;
 &nbsp;import java.util.Random;
 &nbsp;
+&nbsp;/**
+&nbsp; * Diffie-Hellman key exchange algorithm.
+&nbsp; */
 <b class="nc">&nbsp;public class DiffieHellman {</b>
 &nbsp;
 <b class="fc">&nbsp;    private static final BigInteger G = BigInteger.valueOf ( 3 );</b>
 <b class="fc">&nbsp;    private static final BigInteger N = BigInteger.valueOf ( 1289971646 );</b>
 &nbsp;    private static final int NUM_BITS = 128;
 &nbsp;
+&nbsp;    /**
+&nbsp;     * Generates a private key of 128 bits using SHA1PRNG algorithm.
+&nbsp;     *
+&nbsp;     * @return private key.
+&nbsp;     *
+&nbsp;     * @throws NoSuchAlgorithmException if the algorithm is not found.
+&nbsp;     */
 &nbsp;    public static BigInteger generatePrivateKey ( ) throws NoSuchAlgorithmException {
 <b class="fc">&nbsp;        Random randomGenerator = SecureRandom.getInstance ( &quot;SHA1PRNG&quot; );</b>
 <b class="fc">&nbsp;        return new BigInteger ( NUM_BITS , randomGenerator );</b>
 &nbsp;    }
 &nbsp;
+&nbsp;    /**
+&nbsp;     * Generates a public key using the private key.
+&nbsp;     *
+&nbsp;     * @param privateKey private key.
+&nbsp;     *
+&nbsp;     * @return public key.
+&nbsp;     */
 &nbsp;    public static BigInteger generatePublicKey ( BigInteger privateKey ) {
-&nbsp;
 <b class="fc">&nbsp;        return G.modPow ( privateKey , N );</b>
 &nbsp;    }
 &nbsp;
+&nbsp;    /**
+&nbsp;     * Generates a shared secret using the public key and the private key.
+&nbsp;     *
+&nbsp;     * @param publicKey public key.
+&nbsp;     *
+&nbsp;     * @param privateKey private key.
+&nbsp;     *
+&nbsp;     * @return  shared secret.
+&nbsp;     */
 &nbsp;    public static BigInteger computePrivateKey ( BigInteger publicKey , BigInteger privateKey ) {
 <b class="fc">&nbsp;        return publicKey.modPow ( privateKey , N );</b>
 &nbsp;    }
@@ -123,7 +148,7 @@ Current scope:     <a href="../../index.html">all classes</a>
 
 <div class="footer">
     
-    <div style="float:right;">generated on 2023-05-10 20:45</div>
+    <div style="float:right;">generated on 2023-05-10 21:03</div>
 </div>
 </body>
 </html>

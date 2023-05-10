@@ -51,7 +51,7 @@ Current scope:     <a href="../../index.html">all classes</a>
 </td>
 <td class="coverageStat">
   <span class="percent">
-    85,7%
+    85.7%
   </span>
   <span class="absValue">
     (6/7)
@@ -59,7 +59,7 @@ Current scope:     <a href="../../index.html">all classes</a>
 </td>
 <td class="coverageStat">
   <span class="percent">
-    91,4%
+    91.4%
   </span>
   <span class="absValue">
     (32/35)
@@ -74,58 +74,76 @@ Current scope:     <a href="../../index.html">all classes</a>
 
 
 <pre>
-<code class="sourceCode" id="sourceCode">&nbsp;import javax.crypto.*;
+<code class="sourceCode" id="sourceCode">&nbsp;import javax.crypto.Cipher;
 &nbsp;import javax.crypto.spec.IvParameterSpec;
 &nbsp;import javax.crypto.spec.SecretKeySpec;
 &nbsp;import java.nio.ByteBuffer;
-&nbsp;import java.security.*;
+&nbsp;import java.security.Key;
+&nbsp;import java.security.KeyPair;
+&nbsp;import java.security.KeyPairGenerator;
+&nbsp;import java.security.SecureRandom;
 &nbsp;import java.util.Arrays;
 &nbsp;
 <b class="nc">&nbsp;public class Encryption {</b>
 &nbsp;
+&nbsp;    /**
+&nbsp;     * Generates a random secret key pair using the RSA algorithm with a key size of 2048 bits
+&nbsp;     *
+&nbsp;     * @return a randomly generated secret key
+&nbsp;     *
+&nbsp;     * @throws Exception when the key generation fails
+&nbsp;     */
 &nbsp;    public static KeyPair generateKeyPair ( ) throws Exception {
 <b class="fc">&nbsp;        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance ( &quot;RSA&quot; );</b>
 <b class="fc">&nbsp;        keyPairGenerator.initialize ( 2048 );</b>
 <b class="fc">&nbsp;        return keyPairGenerator.generateKeyPair ( );</b>
 &nbsp;    }
 &nbsp;
+&nbsp;    /**
+&nbsp;     * Encrypts a message using the RSA algorithm with the provided public key and
+&nbsp;     * returns the encrypted message as an array of bytes
+&nbsp;     *
+&nbsp;     * @param message  the message to be encrypted
+&nbsp;     * @param publicKey the public key used to encrypt the message
+&nbsp;     *
+&nbsp;     * @return the encrypted message as an array of bytes
+&nbsp;     *
+&nbsp;     * @throws Exception when the encryption fails
+&nbsp;     */
 &nbsp;    public static byte[] encryptRSA ( byte[] message , Key publicKey ) throws Exception {
 <b class="fc">&nbsp;        Cipher cipher = Cipher.getInstance ( &quot;RSA&quot; );</b>
 <b class="fc">&nbsp;        cipher.init ( Cipher.ENCRYPT_MODE , publicKey );</b>
 <b class="fc">&nbsp;        return cipher.doFinal ( message );</b>
 &nbsp;    }
 &nbsp;
+&nbsp;    /**
+&nbsp;     * Decrypts a message using the RSA algorithm with the provided private key and
+&nbsp;     * returns the decrypted message as an array of bytes
+&nbsp;     *
+&nbsp;     * @param message  the message to be decrypted
+&nbsp;     * @param privateKey the private key used to decrypt the message
+&nbsp;     *
+&nbsp;     * @return the decrypted message as an array of bytes
+&nbsp;     *
+&nbsp;     * @throws Exception when the decryption fails
+&nbsp;     */
 &nbsp;    public static byte[] decryptRSA ( byte[] message , Key privateKey ) throws Exception {
 <b class="fc">&nbsp;        Cipher cipher = Cipher.getInstance ( &quot;RSA&quot; );</b>
 <b class="fc">&nbsp;        cipher.init ( Cipher.DECRYPT_MODE , privateKey );</b>
 <b class="fc">&nbsp;        return cipher.doFinal ( message );</b>
 &nbsp;    }
 &nbsp;
-&nbsp;//    /**
-&nbsp;//     * @param message   the message to be encrypted
-&nbsp;//     * @param secretKey the secret key used to encrypt the message
-&nbsp;//     *
-&nbsp;//     * @return the encrypted message as an array of bytes
-&nbsp;//     *
-&nbsp;//     * @throws Exception when the decryption fails
-&nbsp;//     */
-&nbsp;//    public static byte[] encryptMessage(byte[] message , byte[] secretKey, String algorithm ) throws Exception {
-&nbsp;//        byte[] secretKeyPadded = ByteBuffer.allocate ( keySize(algorithm)/8 ).put ( secretKey ).array ( );
-&nbsp;//        SecretKeySpec secreteKeySpec = new SecretKeySpec ( secretKeyPadded , algorithm );
-&nbsp;//        Cipher cipher = Cipher.getInstance ( algorithm + &quot;/ECB/PKCS5Padding&quot; );
-&nbsp;//        cipher.init ( Cipher.ENCRYPT_MODE , secreteKeySpec );
-&nbsp;//        return cipher.doFinal ( message );
-&nbsp;//    }
-&nbsp;
-&nbsp;
 &nbsp;    /**
 &nbsp;     * Encrypts a text using AES in CBC (Cipher Block Chaining) mode.
-&nbsp;     * The initializatiom vector is created with a random value with the same length of the block size,
+&nbsp;     * The initialization vector is created with a random value with the same length of the block size,
+&nbsp;     *
 &nbsp;     * @param message   the message to be encrypted
 &nbsp;     * @param secretKey the secret key used to encrypt the message
 &nbsp;     * @param algorithm AES, DES or 3DES
-&nbsp;     * @return          the encrypted message as an array of bytes
-&nbsp;     * @throws Exception
+&nbsp;     *
+&nbsp;     * @return the encrypted message as an array of bytes
+&nbsp;     *
+&nbsp;     * @throws Exception when the encryption fails
 &nbsp;     */
 &nbsp;    public static byte[] encryptMessage(byte[] message, byte[] secretKey, String algorithm) throws Exception {
 <b class="fc">&nbsp;        byte[] secretKeyPadded = Arrays.copyOf(secretKey, keySize(algorithm) / 8);</b>
@@ -144,12 +162,15 @@ Current scope:     <a href="../../index.html">all classes</a>
 &nbsp;    }
 &nbsp;
 &nbsp;    /**
-&nbsp;     * Dencrypts a text using AES in CBC (Cipher Block Chaining) mode.
+&nbsp;     * Decrypts a text using AES in CBC (Cipher Block Chaining) mode.
+&nbsp;     *
 &nbsp;     * @param Message   the message to be decrypted
 &nbsp;     * @param secretKey secretKey the secret key used to decrypt the message
 &nbsp;     * @param algorithm AES, DES or 3DES
-&nbsp;     * @return          the decrypted message as an array of bytes
-&nbsp;     * @throws Exception
+&nbsp;     *
+&nbsp;     * @return the decrypted message as an array of bytes
+&nbsp;     *
+&nbsp;     * @throws Exception when the decryption fails
 &nbsp;     */
 &nbsp;    public static byte[] decryptMessage(byte[] Message, byte[] secretKey, String algorithm) throws Exception {
 <b class="fc">&nbsp;        byte[] secretKeyPadded = ByteBuffer.allocate(keySize(algorithm) / 8).put(secretKey).array();</b>
@@ -162,7 +183,13 @@ Current scope:     <a href="../../index.html">all classes</a>
 &nbsp;    }
 &nbsp;
 &nbsp;
-&nbsp;    // KeySize assigned for each algorithm
+&nbsp;    /**
+&nbsp;     * Returns the key size in bits for the specified algorithm
+&nbsp;     *
+&nbsp;     * @param algorithm the algorithm to be used
+&nbsp;     *
+&nbsp;     * @return the key size in bits for the specified algorithm
+&nbsp;     */
 &nbsp;    private static int keySize(String algorithm) {
 <b class="fc">&nbsp;        if (algorithm.equals(&quot;DESede&quot;)) {</b>
 <b class="nc">&nbsp;            return 192;</b>
@@ -197,7 +224,7 @@ Current scope:     <a href="../../index.html">all classes</a>
 
 <div class="footer">
     
-    <div style="float:right;">generated on 2023-05-10 20:45</div>
+    <div style="float:right;">generated on 2023-05-10 21:03</div>
 </div>
 </body>
 </html>
