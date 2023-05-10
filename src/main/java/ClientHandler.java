@@ -19,7 +19,7 @@ public class ClientHandler extends Thread {
     private final ObjectInputStream in;
     private final ObjectOutputStream out;
     private final Socket client;
-    private boolean isConnected;
+    private final boolean isConnected;
     private PrivateKey privateRSAKey;
     private PublicKey publicRSAKey;
     private PublicKey senderPublicRSAKey;
@@ -72,10 +72,6 @@ public class ClientHandler extends Thread {
             outputStream.write(publicRSAKey.getEncoded());
         }
         this.macKey = receiveMacKey();
-    }
-
-    public String getClientName() {
-        return clientName;
     }
 
     /**

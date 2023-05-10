@@ -52,23 +52,6 @@ public class Encryption {
         return cipher.doFinal ( message );
     }
 
-//    /**
-//     * @param message   the message to be encrypted
-//     * @param secretKey the secret key used to encrypt the message
-//     *
-//     * @return the encrypted message as an array of bytes
-//     *
-//     * @throws Exception when the decryption fails
-//     */
-//    public static byte[] encryptMessage(byte[] message , byte[] secretKey, String algorithm ) throws Exception {
-//        byte[] secretKeyPadded = ByteBuffer.allocate ( keySize(algorithm)/8 ).put ( secretKey ).array ( );
-//        SecretKeySpec secreteKeySpec = new SecretKeySpec ( secretKeyPadded , algorithm );
-//        Cipher cipher = Cipher.getInstance ( algorithm + "/ECB/PKCS5Padding" );
-//        cipher.init ( Cipher.ENCRYPT_MODE , secreteKeySpec );
-//        return cipher.doFinal ( message );
-//    }
-
-
     /**
      * Encrypts a text using AES in CBC (Cipher Block Chaining) mode.
      * The initialization vector is created with a random value with the same length of the block size,

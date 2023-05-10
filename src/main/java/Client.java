@@ -1,3 +1,5 @@
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -9,6 +11,7 @@ import java.math.BigInteger;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.security.KeyPair;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.Scanner;
@@ -114,14 +117,6 @@ public class Client {
 
     public ObjectInputStream getIn() {
         return in;
-    }
-
-    public String getSymmetricAlgorithm() {
-        return symmetricAlgorithm;
-    }
-
-    public String getHashingAlgorithm() {
-        return hashingAlgorithm;
     }
 
     /**
