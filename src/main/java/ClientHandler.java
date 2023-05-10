@@ -40,6 +40,7 @@ public class ClientHandler extends Thread {
     /**
      * Creates a ClientHandler object by specifying the socket to communicate with the client. All the processing is
      * done in a separate thread.
+     * @param client represents the socket connection with the client
      *
      * @throws IOException when an I/O error occurs when creating the socket
      */
@@ -82,6 +83,11 @@ public class ClientHandler extends Thread {
         return clientName;
     }
 
+    /**
+     * Sends a success message to the client indicating that the selected algorithm is supported by the server.
+     *
+     * @throws IOException when an I/O error occurs when closing the socket
+     */
     private void sendSuccessMessage() throws IOException {
         out.writeUTF("The selected Algorithm is supported by this server, enjoy!");
         System.out.println("The selected Algorithm is supported by this server, enjoy!");
@@ -103,6 +109,12 @@ public class ClientHandler extends Thread {
         sendPublicRSAKey();
         return clientPublicRSAKey;
     }
+
+    /**
+     * Reads the MacKey sent from the client soo that it can assign it to its own MacKey
+     * @return the key after decrypting it
+     * @throws Exception
+     */
 
     public byte[] receiveMacKey() throws Exception{
         byte[] macKey = (byte[]) in.readObject();
@@ -151,6 +163,11 @@ public class ClientHandler extends Thread {
     public BigInteger getSharedSecret() {
         return sharedSecret;
     }
+
+    /**
+     * Cycle responsible for receiving every request from the client
+     * Also responsible for renewing the handshake
+     */
 
     @Override
     public void run ( ) {
@@ -206,6 +223,14 @@ public class ClientHandler extends Thread {
         }
     }
 
+    /**
+     * Method responsible for reading the message sent from the {@link Client}
+     * Decrypts the message using the established algorithm
+     * If the message starts with {@value = "NAME"} it means the client is introducing itself
+     * soo it should not return a file but create a directory
+     * @return the path of the file or "nothing" to let the {@link ClientHandler} know to greet the client
+     * @throws Exception
+     */
     private byte[] receiveMessage() throws Exception {
         Message messageObj = (Message) in.readObject();
         byte[] decryptedMessage = decryptMessage(messageObj);
@@ -236,6 +261,16 @@ public class ClientHandler extends Thread {
         }
     }
 
+    /**
+     * Decrypts the message and verifies its integrity. If the integrity is verified,
+     * the decrypted message is returned.
+     *
+     * @param messageObj is the message object that is being received from the client
+     *
+     * @return the decrypted message if its integrity is verified
+     *
+     * @throws Exception when the message cannot be decrypted or its integrity is not verified
+     */
     private byte[] decryptMessage(Message messageObj) throws Exception {
         // Extracts and decrypt the message
         byte[] decryptedMessage = Encryption.decryptMessage(messageObj.getMessage(), sharedSecret.toByteArray(),
@@ -268,6 +303,11 @@ public class ClientHandler extends Thread {
         out.flush();
     }
 
+    /**
+     * After checking if the received algorithm is not valid {@link ClientHandler()#verifyAlgorithmServerSupport()}
+     * and alerts the client and closes the connection with it
+     * @throws IOException
+     */
     private void sendErrorMessage() throws IOException {
         out.writeUTF("The selected Algorithm is not supported by this server!");
         System.out.println("The selected Algorithm is not supported by this server!");
@@ -276,7 +316,8 @@ public class ClientHandler extends Thread {
     }
 
     /**
-     * Receive the algorithms selected by the client, and verify if the server support them
+     * Receive the symmetric algorithm selected by the client, and verify if the server support them
+     * @return boolean {@value = true if algorithm is available}
      */
     private boolean verifyAlgorithmServerSupport(String receivedAlgorithm) {
         String[] availableAlgorithms = {"AES", "DES", "DESede"};
@@ -299,6 +340,10 @@ public class ClientHandler extends Thread {
         return isAlgorithmAvailable;
     }
 
+    /**
+     * Receive the hashing algorithm selected by the client, and verify if the server support them
+     * @return boolean {@value = true if algorithm is available}
+     */
     private boolean verifyHashAlgorithmServerSupport(String receivedAlgorithm) {
         String[] availableAlgorithms = {"HmacMD5", "HmacSHA256","HmacSHA512"};
         System.out.println("Received selected algorithm: " + receivedAlgorithm);

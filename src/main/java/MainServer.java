@@ -2,6 +2,10 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Scanner;
 
+/**
+ * Class that represents the Server and contains the main method
+ * Responsible for running the server and stopping the server.
+ */
 public class MainServer {
 
     public static final String NREQUESTSMAP_PATH = "server/numOfRequestsMap.txt";

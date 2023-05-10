@@ -44,6 +44,10 @@ public class Client {
      * send a message.
      *
      * @param port the port to connect to
+     * @param name name of the client
+     * @param wayToChooseSymmetric way to choose the Symmetric algorithm, "User" if the user is the one choosing and "name of algorithm" if the algorithm is pre-defined, for testing purposes
+     * @param wayToChooseHashing way to choose the hashing algorithm, "User" if the user is the one choosing and "name of algorithm" if the algorithm is pre-defined, for testing purposes
+     *
      * @throws IOException when an I/O error occurs when creating the socket
      */
     public Client(int port, String name, String wayToChooseSymmetric, String wayToChooseHashing) throws Exception {
@@ -115,6 +119,22 @@ public class Client {
         return in;
     }
 
+    public byte[] getMacKey() {
+        return macKey;
+    }
+
+    public void setMacKey(byte[] macKey) {
+        this.macKey = macKey;
+    }
+
+    /**
+     * Realizes the Diffie-Hellman key distribution protocol to agree on a shared private key.
+     *
+     * @param wayToChooseHashing the way to choose the hashing algorithm
+     * @param wayToChooseSymmetric the way to choose the symmetric algorithm
+     *
+     * @throws Exception when an I/O error occurs when closing the socket
+     */
     private void handshake(String wayToChooseSymmetric, String wayToChooseHashing) throws Exception {
 
         if (wayToChooseSymmetric.equals("User")) {
@@ -177,12 +197,24 @@ public class Client {
 
         this.sharedSecret = agreeOnSharedSecret(serverPublicRSAKey);
     }
+
+    /**
+     * This function is responsible to generate for each client a unique MacKey
+     * Inside the function it receives the choosen hashing algorithm and encodes de key
+     * @return the encoded key
+     * @throws NoSuchAlgorithmException if the hashing algorithm does not exist
+     */
     private byte[] generateMacKey() throws NoSuchAlgorithmException {
         KeyGenerator keyGen = KeyGenerator.getInstance(this.hashingAlgorithm);
         SecretKey secretKey = keyGen.generateKey();
         return secretKey.getEncoded();
     }
 
+    /**
+     * This method is responsible for sending the generated key to the {@link ClientHandler}
+     * The key is sent in a encrypted way using the chosen symmetric algorithm and the shared secret
+     * @throws Exception
+     */
     private void sendMacKey() throws Exception {
         byte[] encryptedMessage = Encryption.encryptMessage(this.macKey, sharedSecret.toByteArray(),this.symmetricAlgorithm);
         out.writeObject(encryptedMessage);
@@ -246,7 +278,11 @@ public class Client {
 
     /**
      * Executes the client. It reads the file from the console and sends it to the server. It waits for the response and
-     * writes the file to the temporary directory.
+     * writes the file to the {@link Client} directory.
+     * Also sends the clients name to the server
+     * Enters a cycle does only ends when the client disconnect
+     * After 5 request renews the handshake with the server
+     * @throws Exception
      */
     public void execute() throws Exception {
         Scanner usrInput = new Scanner(System.in);
@@ -304,6 +340,8 @@ public class Client {
 
     /**
      * Renews the Handshake after 5 requests to the server
+     * Asking the user which algorithms he wants to use and renews all the keys used
+     * @throws Exception
      */
     public void renewHandshake(String wayToChooseSymmetric, String wayToChooseHashing) throws Exception {
 
@@ -352,10 +390,12 @@ public class Client {
     }
 
     /**
-     * Reads the response from the server, decrypts it, and writes the file to the temporary directory.
+     * Reads the response from the server, decrypts it, and writes the file to the Client directory.
      *
      * @param fileName the name of the file to write
-     * @return
+     * @param in the input stream from which to read the response
+     * @return the decrypted message for testing purposes
+     * * @throws Exception if an error occurs while reading the response or writing the file
      */
     public byte[] processResponse(String fileName, ObjectInputStream in) throws Exception {
         try {
@@ -396,7 +436,8 @@ public class Client {
      * Responsible for letting the server know the clients name
      *
      * @param name - name of the client
-     * @throws Exception
+     *
+     * @throws Exception if an error occurs while sending the message
      */
     public void greeting(String name) throws Exception {
         // Encrypts the message
@@ -439,7 +480,7 @@ public class Client {
     /**
      * Selecting alternative options of symetric algorythm
      *
-     * @return
+     * @return the selected algorithm for symmetric encryption
      */
     public String menuSymmetricAlgorithm() {
         int option;
@@ -479,7 +520,7 @@ public class Client {
     /**
      * Selecting alternative options of hashing algorythm
      *
-     * @return
+     * @return The hashing algorithm selected
      */
     public String menuHashingAlgorithm() {
         int option;
@@ -521,7 +562,10 @@ public class Client {
     }
 
     /**
-     * Closes the connection by closing the socket and the streams.
+     * @param type {@value = 1} mainly used for testing purposes soo that its possible to
+     * catch the error and prove that the user selected a wrong choice.
+     * Closes the connection by closing the socket, the streams and sets isConnected to false
+     * soo that the cycles ends.
      */
     private void closeConnection(int type) {
         try {

@@ -110,8 +110,8 @@ public class tests {
     }
 
     @Test
-    @DisplayName("Checking if changing the Mac key returns an error")
-    public void changingHashKey() throws Exception{
+    @DisplayName("Checking if changing the sharedSecret key returns an error")
+    public void changingSecretKey() throws Exception{
         assertThrows(javax.crypto.BadPaddingException.class, () -> {
             String request = "GET : hello.txt";
             client.sendMessage(request);
@@ -125,6 +125,27 @@ public class tests {
                 modifiedSecretKey[i] = (byte) modifiedByte;
             }
             byte[] decryptedMessage = Encryption.decryptMessage(response.getMessage(), modifiedSecretKey, client.getSymmetricAlgorithm());
+        });
+
+    }
+
+
+    @Test
+    @DisplayName("Checking if changing the Hashing key returns an error")
+    public void changingHashingKey() throws Exception{
+        assertThrows(java.io.EOFException.class, () -> {
+            String request = "GET : hello.txt";
+            byte[] macKey = client.getMacKey();
+            byte[] modifiedSecretKey = macKey;
+
+            for (int i = 0; i < macKey.length; i++) {
+                // Add 10 to each byte value, ensuring it stays within the valid range (-128 to 127)
+                int modifiedByte = (macKey[i] + 10) % 256;
+                modifiedSecretKey[i] = (byte) modifiedByte;
+            }
+            client.setMacKey(modifiedSecretKey);
+            client.sendMessage(request);
+            Message response = (Message) client.getIn().readObject();
         });
 
     }
