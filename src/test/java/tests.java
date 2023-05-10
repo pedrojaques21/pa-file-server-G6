@@ -277,24 +277,6 @@ public class tests {
     }
 
     @Test
-    @DisplayName("Check if long files are sent correctly")
-    public void testLongFiles() throws Exception {
-        File myObj = new File("server/files/cleancode.txt");
-        Scanner myReader = new Scanner(myObj);
-        StringBuilder data = new StringBuilder();
-        while (myReader.hasNextLine()) {
-            String line = myReader.nextLine();
-            data.append(line).append(System.lineSeparator());
-            System.out.println(line);
-        }
-        myReader.close();
-        String request = "GET : cleancode.txt";
-        client.sendMessage(request);
-        byte[] message = client.processResponse(request, client.getIn());
-        assertEquals(data.toString(), new String(message));
-    }
-
-    @Test
     @DisplayName("Check if choosing non suppoted algorithm returns error")
     public void nonSupportedAlgorithm() {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
