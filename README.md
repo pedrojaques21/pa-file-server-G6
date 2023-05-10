@@ -23,3 +23,7 @@ Para utilizar este projeto basta abrir o repositório com o seu IDE perferido e 
 No cliente é necessário providenciar o nome e posteriormente selecionar os algoritmos de encriptação e algoritmo de hash.
 
 Depois o cliente pode requisitar ficheiros que estejam no servidor utilizando o comando "GET : <nome-do-ficheiro>.<extenção-do-ficheiro>".
+  
+## Observações
+  
+Por questões de testes unitários existem valores pré-definidos no ficheiro numOfRequestsMap.txt
