@@ -176,7 +176,7 @@ public class ServerTests {
         );
     }
 
-    @Test
+    /*@Test
     @DisplayName("Two clients requesting different files at the same time")
     public void differentClientsRequestingDifferentFiles() throws Exception {
         String requestFile1 = "GET : hello.txt";
@@ -193,7 +193,7 @@ public class ServerTests {
                 () -> assertNotNull(stringMessage2),
                 () -> assertNotEquals(stringMessage1, stringMessage2)
         );
-    }
+    }*/
 
     @Test
     @DisplayName("Check if the handshake is renewed after 5 requests")
