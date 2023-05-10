@@ -20,11 +20,12 @@ public class Server implements Runnable {
      * The server will be accepting connections from all local addresses.
      *
      * @param port the port number
+     *
      * @throws IOException if an I/O error occurs when opening the socket
      */
     public Server(int port) throws Exception {
         server = new ServerSocket(port);
-        isConnected = true; // TODO: Check if this is necessary or if it should be controlled
+        isConnected = true;
 
     }
 

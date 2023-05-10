@@ -32,10 +32,10 @@ public class ClientHandler extends Thread {
     private boolean hashIsSupported;
     private byte[] macKey;
 
-
     /**
      * Creates a ClientHandler object by specifying the socket to communicate with the client. All the processing is
      * done in a separate thread.
+     *
      * @param client represents the socket connection with the client
      *
      * @throws IOException when an I/O error occurs when creating the socket
@@ -106,8 +106,8 @@ public class ClientHandler extends Thread {
 
     /**
      * Reads the MacKey sent from the client soo that it can assign it to its own MacKey
+     *
      * @return the key after decrypting it
-     * @throws Exception
      */
 
     public byte[] receiveMacKey() throws Exception{
@@ -226,8 +226,8 @@ public class ClientHandler extends Thread {
      * Decrypts the message using the established algorithm
      * If the message starts with {@value = "NAME"} it means the client is introducing itself
      * soo it should not return a file but create a directory
+     *
      * @return the path of the file or "nothing" to let the {@link ClientHandler} know to greet the client
-     * @throws Exception
      */
     private byte[] receiveMessage() throws Exception {
         Message messageObj = (Message) in.readObject();
@@ -305,7 +305,6 @@ public class ClientHandler extends Thread {
     /**
      * After checking if the received algorithm is not valid {@link ClientHandler()#verifyAlgorithmServerSupport()}
      * and alerts the client and closes the connection with it
-     * @throws IOException
      */
     private void sendErrorMessage() throws IOException {
         out.writeUTF("The selected Algorithm is not supported by this server!");
@@ -316,6 +315,7 @@ public class ClientHandler extends Thread {
 
     /**
      * Receive the symmetric algorithm selected by the client, and verify if the server support them
+     *
      * @return boolean {@value = true if algorithm is available}
      */
     private boolean verifyAlgorithmServerSupport(String receivedAlgorithm) {
@@ -368,7 +368,7 @@ public class ClientHandler extends Thread {
     }
 
     /**
-     * Closes the connection by closing the socket and the streams.     *
+     * Closes the connection by closing the socket and the streams.
      */
     private void closeConnection() {
         try {

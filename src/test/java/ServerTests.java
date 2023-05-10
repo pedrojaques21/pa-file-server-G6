@@ -1,28 +1,23 @@
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 
 import java.io.File;
 import java.net.Socket;
 import java.util.Scanner;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ServerTests {
 
     private Client client;
     private static Server server;
 
+
     @BeforeAll
-    public static void startServer() throws Exception{
-        server = new Server ( 8000 );
+    public static void startServer() throws Exception {
+        server = new Server(8000);
         Thread serverThread = new Thread(server);
-        serverThread.start ( );
+        serverThread.start();
     }
+
     @BeforeEach
     public void setUp() throws Exception {
         client = new Client(8000, "TestingClient", "AES", "HmacSHA256");
@@ -38,38 +33,28 @@ public class ServerTests {
     public void createClient() {
         String name = "TestingClient";
         String clientName = client.getName();
-        Socket clientSocket = client.getClient();
-        Assertions.assertAll(
+        Socket clientScoket = client.getClient();
+        assertAll(
                 () -> assertEquals(name, clientName),
-                () -> Assertions.assertTrue(clientSocket.isBound())
+                () -> assertTrue(clientScoket.isBound())
         );
     }
 
     @Test
     @DisplayName("Check if keys from handshake are valid")
     public void testHandshake() {
-        Assertions.assertAll(
-                () -> Assertions.assertNotNull(client.getPublicRSAKey()),
-                () -> Assertions.assertNotNull(client.getPrivateRSAKey()),
-                () -> Assertions.assertNotNull(client.getServerPublicRSAKey()),
-                () -> Assertions.assertNotNull(client.getSharedSecret()),
+        assertAll(
+                () -> assertNotNull(client.getPublicRSAKey()),
+                () -> assertNotNull(client.getPrivateRSAKey()),
+                () -> assertNotNull(client.getServerPublicRSAKey()),
+                () -> assertNotNull(client.getSharedSecret()),
                 () -> assertEquals(String.valueOf(client.getSharedSecret()),String.valueOf(server.getClientHandlerSharedSecret()))
         );
     }
-
-    @Test
-    @DisplayName("Check if handshake is valid")
-    public void checkHandShake() {
-        String clientSharedSecret = String.valueOf(client.getSharedSecret());
-        String serverSharedSecret = String.valueOf(server.getClientHandlerSharedSecret());
-        assertEquals(clientSharedSecret, serverSharedSecret);
-    }
-
     @Test
     @DisplayName("Check if message is being received in a encrypted way")
     public void encryptingMessage() throws Exception {
-        String pathName = client.getName() + "/files/hello.txt";
-        File myObj = new File(pathName);
+        File myObj = new File("server/files/hello.txt");
         Scanner myReader = new Scanner(myObj);
         String data = null;
         while (myReader.hasNextLine()) {
@@ -85,8 +70,7 @@ public class ServerTests {
     @Test
     @DisplayName("Check if message is being decrypted correctly")
     public void decryptingMessage() throws Exception {
-        String pathName = client.getName() + "/files/hello.txt";
-        File myObj = new File(pathName);
+        File myObj = new File("server/files/hello.txt");
         Scanner myReader = new Scanner(myObj);
         String data = null;
         while (myReader.hasNextLine()) {
@@ -104,8 +88,7 @@ public class ServerTests {
     @Test
     @DisplayName("Check if message received is equal to the requested file")
     public void checkMessageReceived() throws Exception {
-        String pathName = client.getName() + "/files/hello.txt";
-        File myObj = new File(pathName);
+        File myObj = new File("server/files/hello.txt");
         Scanner myReader = new Scanner(myObj);
         String data = null;
         while (myReader.hasNextLine()) {
@@ -305,7 +288,7 @@ public class ServerTests {
     }
 
     @Test
-    @DisplayName("Check if choosing non supported algorithm returns error")
+    @DisplayName("Check if choosing non suppoted algorithm returns error")
     public void nonSupportedAlgorithm() {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Client testClient = new Client(8000,"Joe","RC4","Blake2");
@@ -332,8 +315,8 @@ public class ServerTests {
 
     @Test
     @DisplayName("Check if user is notified when asking for a file using a wrong format")
-    public void wrongFormatFile() {
-        IllegalArgumentException exception = Assertions.assertThrows(IllegalArgumentException.class, () -> {
+    public void wrongFormatFile() throws Exception {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             client.sendMessage("GET: fileWrongFormat");
             client.processResponse(RequestUtils.getFileNameFromRequest("GET: fileWrongFormat"), client.getIn());
         });

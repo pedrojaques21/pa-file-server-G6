@@ -9,7 +9,6 @@ public class MainServer {
 
     public static final String NREQUESTSMAP_PATH = "server/numOfRequestsMap.txt";
     public static HashMap<String, Integer> numOfRequestsMap = new HashMap<>();
-
     private static final Scanner scanner = new Scanner(System.in);
 
     public static void main ( String[] args ) throws Exception {

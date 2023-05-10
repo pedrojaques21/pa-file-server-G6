@@ -77,9 +77,6 @@ public class Client {
                 clientExists = false;
             }
         }
-        // Create a temporary directory for putting the request files
-        String userDir = Files.createTempDirectory("fileServer").toFile().getAbsolutePath();
-        System.out.println("Temporary directory path " + userDir);
 
         handshake(wayToChooseSymmetric, wayToChooseHashing);
 
@@ -200,8 +197,10 @@ public class Client {
 
     /**
      * This function is responsible to generate for each client a unique MacKey
-     * Inside the function it receives the choosen hashing algorithm and encodes de key
+     * Inside the function it receives the chosen hashing algorithm and encodes de key
+     *
      * @return the encoded key
+     *
      * @throws NoSuchAlgorithmException if the hashing algorithm does not exist
      */
     private byte[] generateMacKey() throws NoSuchAlgorithmException {
@@ -212,8 +211,7 @@ public class Client {
 
     /**
      * This method is responsible for sending the generated key to the {@link ClientHandler}
-     * The key is sent in a encrypted way using the chosen symmetric algorithm and the shared secret
-     * @throws Exception
+     * The key is sent in an encrypted way using the chosen symmetric algorithm and the shared secret
      */
     private void sendMacKey() throws Exception {
         byte[] encryptedMessage = Encryption.encryptMessage(this.macKey, sharedSecret.toByteArray(),this.symmetricAlgorithm);
@@ -287,7 +285,6 @@ public class Client {
      * Also sends the clients name to the server
      * Enters a cycle does only ends when the client disconnect
      * After 5 request renews the handshake with the server
-     * @throws Exception
      */
     public void execute() {
         Scanner usrInput = new Scanner(System.in);
@@ -347,7 +344,6 @@ public class Client {
     /**
      * Renews the Handshake after 5 requests to the server
      * Asking the user which algorithms he wants to use and renews all the keys used
-     * @throws Exception
      */
 
     public void renewHandshake(String wayToChooseSymmetric, String wayToChooseHashing) throws Exception {
@@ -401,7 +397,9 @@ public class Client {
      *
      * @param fileName the name of the file to write
      * @param in the input stream from which to read the response
+     *
      * @return the decrypted message for testing purposes
+     *
      * * @throws Exception if an error occurs while reading the response or writing the file
      */
     public byte[] processResponse(String fileName, ObjectInputStream in) throws Exception {
@@ -585,10 +583,11 @@ public class Client {
     }
 
     /**
-     * @param type {@value = 1} mainly used for testing purposes soo that its possible to
-     * catch the error and prove that the user selected a wrong choice.
      * Closes the connection by closing the socket, the streams and sets isConnected to false
      * soo that the cycles ends.
+     *
+     * @param type {@value = 1} mainly used for testing purposes soo that its possible to
+     * catch the error and prove that the user selected a wrong choice.
      */
     private void closeConnection(int type) {
         try {
