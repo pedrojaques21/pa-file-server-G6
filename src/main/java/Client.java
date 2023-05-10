@@ -69,9 +69,13 @@ public class Client {
             clientExists = false;
             userDirectory.mkdirs();
         } else {
-            MainServer.numOfRequestsMap = FileHandler.readHashMapFromFile(MainServer.NREQUESTSMAP_PATH);
-            this.numOfRequests = MainServer.numOfRequestsMap.get(this.name);
-            clientExists = true;
+            if (!MainServer.numOfRequestsMap.isEmpty()) {
+                MainServer.numOfRequestsMap = FileHandler.readHashMapFromFile(MainServer.NREQUESTSMAP_PATH);
+                this.numOfRequests = MainServer.numOfRequestsMap.get(this.name);
+                clientExists = true;
+            } else {
+                clientExists = false;
+            }
         }
         // Create a temporary directory for putting the request files
         String userDir = Files.createTempDirectory("fileServer").toFile().getAbsolutePath();
@@ -470,7 +474,14 @@ public class Client {
             System.out.println("***           Encryption Symmetric Algorithm              ***");
             System.out.println("*** (1)-AES256; (2)-DES; (3)-3DES; (4)-RC4(Not supported) ***");
             System.out.println("*************************************************************");
-            option = input.nextInt();
+            try {
+                option = input.nextInt();
+                input.nextLine(); //
+            } catch (Exception e) {
+                System.out.println("Invalid input.");
+                input.nextLine();
+                continue;
+            }
 
             switch (option) {
                 case 1 -> {
@@ -510,7 +521,14 @@ public class Client {
             System.out.println("***                    Hashing Algorithm                      ***");
             System.out.println("*** (1)-MD5; (2)-SHA256; (3)-SHA512; (4)Blake2(Not Supported) ***");
             System.out.println("*****************************************************************");
-            option = input.nextInt();
+            try {
+                option = input.nextInt();
+                input.nextLine(); //
+            } catch (Exception e) {
+                System.out.println("Invalid input.");
+                input.nextLine();
+                continue;
+            }
 
             switch (option) {
                 case 1 -> {
@@ -544,8 +562,6 @@ public class Client {
 
     /**
      * Closes the connection by closing the socket and the streams.
-     *
-     * @throws RuntimeException if an error occurs while closing the connection
      */
     private void closeConnection(int type) {
         try {

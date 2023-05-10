@@ -18,7 +18,6 @@ public class ServerTests {
     private static Server server;
     private static Thread serverThread;
 
-
     @BeforeAll
     public static void startServer() throws Exception{
         server = new Server ( 8000 );
@@ -34,7 +33,6 @@ public class ServerTests {
     public void tearDown() throws Exception {
         client.getClient().close();
     }
-
 
     @Test
     @DisplayName("Check if user is created correctly")
@@ -59,6 +57,15 @@ public class ServerTests {
                 () -> assertEquals(String.valueOf(client.getSharedSecret()),String.valueOf(server.getClientHandlerSharedSecret()))
         );
     }
+
+    @Test
+    @DisplayName("Check if handshake is valid")
+    public void checkHandShake() {
+        String clientSharedSecret = String.valueOf(client.getSharedSecret());
+        String serverSharedSecret = String.valueOf(server.getClientHandlerSharedSecret());
+        assertEquals(clientSharedSecret, serverSharedSecret);
+    }
+
     @Test
     @DisplayName("Check if message is being received in a encrypted way")
     public void encryptingMessage() throws Exception {
