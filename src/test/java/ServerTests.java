@@ -68,7 +68,8 @@ public class ServerTests {
     @Test
     @DisplayName("Check if message is being received in a encrypted way")
     public void encryptingMessage() throws Exception {
-        File myObj = new File("server/files/hello.txt");
+        String pathName = client.getName() + "/files/hello.txt";
+        File myObj = new File(pathName);
         Scanner myReader = new Scanner(myObj);
         String data = null;
         while (myReader.hasNextLine()) {
@@ -84,7 +85,8 @@ public class ServerTests {
     @Test
     @DisplayName("Check if message is being decrypted correctly")
     public void decryptingMessage() throws Exception {
-        File myObj = new File("server/files/hello.txt");
+        String pathName = client.getName() + "/files/hello.txt";
+        File myObj = new File(pathName);
         Scanner myReader = new Scanner(myObj);
         String data = null;
         while (myReader.hasNextLine()) {
@@ -102,7 +104,8 @@ public class ServerTests {
     @Test
     @DisplayName("Check if message received is equal to the requested file")
     public void checkMessageReceived() throws Exception {
-        File myObj = new File("server/files/hello.txt");
+        String pathName = client.getName() + "/files/hello.txt";
+        File myObj = new File(pathName);
         Scanner myReader = new Scanner(myObj);
         String data = null;
         while (myReader.hasNextLine()) {
@@ -265,7 +268,8 @@ public class ServerTests {
     @Test
     @DisplayName("Check if long files are sent correctly")
     public void testLongFiles() throws Exception {
-        File myObj = new File("server/files/cleancode.txt");
+        String pathName = client.getName() + "/files/cleancode.txt";
+        File myObj = new File(pathName);
         Scanner myReader = new Scanner(myObj);
         StringBuilder data = new StringBuilder();
         while (myReader.hasNextLine()) {
@@ -281,7 +285,7 @@ public class ServerTests {
     }
 
     @Test
-    @DisplayName("Check if choosing non suppoted algorithm returns error")
+    @DisplayName("Check if choosing non supported algorithm returns error")
     public void nonSupportedAlgorithm() {
         IllegalArgumentException exception = Assertions.assertThrows(IllegalArgumentException.class, () -> {
             Client testClient = new Client(8000,"Joe","RC4","Blake2");
