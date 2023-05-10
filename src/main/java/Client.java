@@ -95,10 +95,6 @@ public class Client {
         return client;
     }
 
-    public int getNumOfRequests() {
-        return numOfRequests;
-    }
-
     public PublicKey getPublicRSAKey() {
         return publicRSAKey;
     }
